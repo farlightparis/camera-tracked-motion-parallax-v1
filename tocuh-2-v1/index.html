@@ -6,15 +6,14 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
-    <title>"TocuH" 2.0 V1 · Lava Grill Schaufenster-Kiosk hinter Glas</title>
+    <title>"TocuH" 2.0 V1 · In die Oberfläche geschnitzt (Lava Grill)</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Orbitron:wght@600;800;900&family=Plus+Jakarta+Sans:wght@500;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Orbitron:wght@600;800;900&family=Plus+Jakarta+Sans:wght@500;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
       rel="stylesheet"
     />
-    <!-- Optional MediaPipe Hands CDN (progressive enhancement on top of built-in 60 FPS Optical-Flow Vision Engine) -->
     <script
       src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"
       crossorigin="anonymous"
@@ -22,19 +21,17 @@
     ></script>
     <style>
       :root {
-        --bg-void: #03060c;
-        --bg-panel: rgba(10, 17, 30, 0.88);
-        --bg-card: rgba(15, 25, 42, 0.92);
-        --holo-cyan: #00f0ff;
-        --holo-amber: #ffaa00;
-        --holo-lava: #ff4500;
-        --holo-emerald: #10b981;
-        --holo-magenta: #ff007f;
-        --text-bright: #ffffff;
-        --text-muted: #94a3b8;
-        --font-sci: 'Orbitron', sans-serif;
-        --font-sans: 'Plus Jakarta Sans', sans-serif;
-        --font-mono: 'JetBrains Mono', monospace;
+        /* Dynamic Light Vector driven by Camera / Hand Position (-1 to +1) */
+        --lx: 2px;
+        --ly: 3px;
+        --neg-lx: -2px;
+        --neg-ly: -3px;
+        --spot-x: 50%;
+        --spot-y: 45%;
+
+        --font-carve: 'Cinzel', serif;
+        --font-modern: 'Orbitron', sans-serif;
+        --font-body: 'Plus Jakarta Sans', sans-serif;
       }
 
       * {
@@ -50,635 +47,499 @@
         width: 100%;
         height: 100%;
         overflow: hidden;
-        background: radial-gradient(circle at 50% 25%, #0c1628 0%, #03060c 78%);
-        color: var(--text-bright);
-        font-family: var(--font-sans);
+        background: #0b0a09;
+        color: #d6cec2;
+        font-family: var(--font-carve);
       }
 
-      /* Shop-Window Glass Reflection Overlay */
-      .window-glass-sheen {
+      /* =====================================================================
+       * 1. THE LIVING SURFACE BACKGROUND (NO BOXES, ONLY SURFACE & LETTERS)
+       * ===================================================================== */
+      #surface-canvas {
         position: fixed;
         inset: 0;
-        pointer-events: none;
-        z-index: 90;
-        background: linear-gradient(
-          125deg,
-          rgba(255, 255, 255, 0.04) 0%,
-          rgba(0, 240, 255, 0.015) 28%,
-          transparent 45%,
-          transparent 72%,
-          rgba(255, 170, 0, 0.025) 100%
-        );
-        border: 2px solid rgba(0, 240, 255, 0.22);
-        box-shadow: inset 0 0 60px rgba(0, 240, 255, 0.08);
-      }
-
-      /* Overall Kiosk Shell with Subtle 3D Motion Parallax */
-      .kiosk-viewport {
-        position: relative;
         width: 100vw;
         height: 100vh;
-        display: flex;
-        flex-direction: column;
-        padding: 12px 16px;
-        gap: 10px;
-        perspective: 1500px;
-        z-index: 10;
+        z-index: 1;
+        display: block;
       }
 
-      .kiosk-parallax-stage {
-        flex: 1;
-        min-height: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        transform-style: preserve-3d;
-        transition: transform 0.08s ease-out;
-      }
-
-      /* 1. TOP KIOSK HEADER BAR */
-      .kiosk-header {
+      /* Seamless Organic Dish Essence blended into the stone surface (Zero borders!) */
+      .surface-dish-essence {
+        position: fixed;
+        inset: 0;
+        z-index: 2;
+        pointer-events: none;
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        background: rgba(7, 13, 24, 0.92);
-        border: 1.5px solid rgba(0, 240, 255, 0.35);
-        border-radius: 18px;
-        padding: 10px 16px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65), 0 0 22px rgba(0, 240, 255, 0.12);
-        flex-wrap: wrap;
+        justify-content: center;
+        opacity: 0.42;
+        mix-blend-mode: screen;
+        transition: opacity 0.6s ease, transform 0.6s ease;
       }
 
-      .brand-cluster {
-        display: flex;
-        align-items: center;
-        gap: 12px;
+      .surface-dish-essence img {
+        width: min(76vw, 820px);
+        height: min(76vh, 820px);
+        object-fit: cover;
+        filter: saturate(1.35) contrast(1.25) brightness(0.85);
+        /* Feather edges completely so there is NEVER a visible frame or border */
+        -webkit-mask-image: radial-gradient(
+          circle at 50% 50%,
+          rgba(0, 0, 0, 0.95) 0%,
+          rgba(0, 0, 0, 0.55) 38%,
+          rgba(0, 0, 0, 0.12) 58%,
+          rgba(0, 0, 0, 0) 74%
+        );
+        mask-image: radial-gradient(
+          circle at 50% 50%,
+          rgba(0, 0, 0, 0.95) 0%,
+          rgba(0, 0, 0, 0.55) 38%,
+          rgba(0, 0, 0, 0.12) 58%,
+          rgba(0, 0, 0, 0) 74%
+        );
       }
 
-      .tocuh-badge {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: linear-gradient(135deg, rgba(255, 69, 0, 0.25), rgba(255, 170, 0, 0.2));
-        border: 1.5px solid var(--holo-amber);
-        padding: 6px 14px;
-        border-radius: 12px;
-        box-shadow: 0 0 16px rgba(255, 170, 0, 0.3);
+      /* Dynamic Torchlight / Magma Illumination following the Viewer/Hand */
+      .surface-torchlight {
+        position: fixed;
+        inset: 0;
+        z-index: 3;
+        pointer-events: none;
+        background: radial-gradient(
+          circle 520px at var(--spot-x) var(--spot-y),
+          rgba(255, 145, 50, 0.16) 0%,
+          rgba(255, 80, 10, 0.06) 45%,
+          rgba(0, 0, 0, 0.55) 100%
+        );
       }
 
-      .tocuh-dot {
-        width: 11px;
-        height: 11px;
-        border-radius: 50%;
-        background: var(--holo-emerald);
-        box-shadow: 0 0 12px var(--holo-emerald);
-        animation: pulseGlow 1.5s infinite;
+      /* =====================================================================
+       * 2. CARVED / CHISELED TYPOGRAPHY ENGINE (EINGRAVIERT IN DIE OBERFLÄCHE)
+       *    Zero backgrounds, zero borders, zero boxes! Only carved letters!
+       * ===================================================================== */
+
+      /* Deeply Carved Stone Lettering (Unselected / Resting State) */
+      .carved-text {
+        background: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        outline: none !important;
+        color: rgba(175, 165, 154, 0.78);
+        /* Multi-layered directional chisel bevel: dark inner cavity + sunlit bottom-right ridge */
+        text-shadow:
+          var(--neg-lx) var(--neg-ly) 2px rgba(0, 0, 0, 0.96),
+          calc(var(--neg-lx) * 0.5) calc(var(--neg-ly) * 0.5) 1px rgba(0, 0, 0, 0.92),
+          var(--lx) var(--ly) 1px rgba(255, 230, 200, 0.28),
+          0px 2px 6px rgba(0, 0, 0, 0.85);
+        transition:
+          color 0.28s ease,
+          text-shadow 0.28s ease,
+          transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+          opacity 0.35s ease;
       }
 
-      @keyframes pulseGlow {
-        0%,
-        100% {
-          transform: scale(1);
-          opacity: 1;
-        }
-        50% {
-          transform: scale(1.28);
-          opacity: 0.65;
-        }
+      /* Deep Monumental Carving for Main Titles */
+      .carved-monument {
+        background: none !important;
+        border: none !important;
+        color: #dfd7cc;
+        text-shadow:
+          calc(var(--neg-lx) * 1.4) calc(var(--neg-ly) * 1.4) 3px rgba(0, 0, 0, 0.98),
+          var(--neg-lx) var(--neg-ly) 1px rgba(0, 0, 0, 0.95),
+          var(--lx) var(--ly) 1.5px rgba(255, 225, 185, 0.38),
+          0px 4px 14px rgba(0, 0, 0, 0.9);
       }
 
-      .tocuh-title {
-        font-family: var(--font-sci);
-        font-size: clamp(15px, 1.8vw, 21px);
-        font-weight: 900;
-        letter-spacing: 0.06em;
-        color: #fff;
+      /* Molten Lava Ignition inside the Carved Grooves when Hovered or Active! */
+      .carved-active,
+      [data-air-target].air-hover {
+        color: #ffe8c2 !important;
+        text-shadow:
+          var(--neg-lx) var(--neg-ly) 2px rgba(0, 0, 0, 0.98),
+          var(--lx) var(--ly) 1px rgba(255, 240, 200, 0.65),
+          0 0 12px rgba(255, 120, 0, 0.85),
+          0 0 28px rgba(255, 69, 0, 0.65),
+          0 0 48px rgba(255, 40, 0, 0.4) !important;
+        transform: scale(1.04);
       }
 
-      .tocuh-sub {
-        font-family: var(--font-mono);
-        font-size: 11px;
-        color: var(--holo-cyan);
-        letter-spacing: 0.05em;
-      }
-
-      /* Live Gesture Guide Pill */
-      .gesture-status-bar {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        background: rgba(0, 240, 255, 0.08);
-        border: 1px solid rgba(0, 240, 255, 0.3);
-        padding: 7px 14px;
-        border-radius: 999px;
-        font-family: var(--font-mono);
-        font-size: 11.5px;
-        color: #e2e8f0;
-      }
-
-      .gesture-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-      }
-
-      .gesture-chip strong {
-        color: var(--holo-amber);
-      }
-
-      /* Top Right Controls */
-      .header-actions {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-      }
-
-      .kiosk-btn {
-        appearance: none;
-        border: 1.5px solid rgba(255, 255, 255, 0.2);
-        background: rgba(15, 23, 42, 0.9);
-        color: #f8fafc;
-        font-family: var(--font-sci);
-        font-size: 11px;
-        font-weight: 800;
-        letter-spacing: 0.05em;
-        padding: 9px 13px;
-        border-radius: 12px;
+      /* Subtle Cyan-Crystal Carving Variant for System Inscriptions */
+      .carved-system {
+        background: none !important;
+        border: none !important;
+        font-family: var(--font-modern);
+        color: rgba(155, 185, 198, 0.72);
+        letter-spacing: 0.14em;
+        text-shadow:
+          var(--neg-lx) var(--neg-ly) 2px rgba(0, 0, 0, 0.96),
+          var(--lx) var(--ly) 1px rgba(180, 245, 255, 0.25);
         cursor: pointer;
-        display: inline-flex;
+        transition: all 0.25s ease;
+      }
+
+      .carved-system.active-sys,
+      .carved-system.air-hover {
+        color: #ccfaff !important;
+        text-shadow:
+          var(--neg-lx) var(--neg-ly) 2px rgba(0, 0, 0, 0.98),
+          0 0 14px rgba(0, 240, 255, 0.85),
+          0 0 30px rgba(0, 240, 255, 0.5) !important;
+      }
+
+      /* =====================================================================
+       * 3. FRAMELESS SPATIAL LAYOUT (ONLY LETTERS ON THE SURFACE)
+       * ===================================================================== */
+      .surface-stage {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: clamp(18px, 3vh, 36px) clamp(24px, 4vw, 64px);
+      }
+
+      /* Top Carved Inscription Row (Brand & System Words — Zero Button Boxes) */
+      .top-inscriptions {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+
+      .brand-engraving {
+        display: flex;
+        align-items: baseline;
+        gap: 18px;
+        flex-wrap: wrap;
+      }
+
+      .brand-word {
+        font-family: var(--font-carve);
+        font-size: clamp(20px, 2.4vw, 32px);
+        font-weight: 900;
+        letter-spacing: 0.18em;
+      }
+
+      .brand-subword {
+        font-family: var(--font-modern);
+        font-size: clamp(10px, 1vw, 13px);
+        font-weight: 700;
+        letter-spacing: 0.22em;
+      }
+
+      .system-runes {
+        display: flex;
         align-items: center;
-        gap: 6px;
-        transition: all 0.2s ease;
+        gap: clamp(16px, 2.2vw, 32px);
+        flex-wrap: wrap;
+      }
+
+      .rune-btn {
+        appearance: none;
+        background: none;
+        border: none;
+        font-size: clamp(11px, 1.05vw, 14px);
+        font-weight: 800;
+        padding: 6px 4px;
+        cursor: pointer;
         text-decoration: none;
       }
 
-      .kiosk-btn.cam-btn {
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.28), rgba(4, 120, 87, 0.45));
-        border-color: var(--holo-emerald);
-        color: #a7f3d0;
-        box-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
-      }
-
-      .kiosk-btn.cam-btn.active {
-        background: linear-gradient(135deg, #10b981, #059669);
-        color: #022c22;
-        box-shadow: 0 0 24px rgba(16, 185, 129, 0.65);
-      }
-
-      .kiosk-btn.demo-btn.active {
-        background: rgba(0, 240, 255, 0.22);
-        border-color: var(--holo-cyan);
-        color: #fff;
-        box-shadow: 0 0 16px rgba(0, 240, 255, 0.35);
-      }
-
-      .kiosk-btn.link-v6 {
-        background: linear-gradient(135deg, rgba(255, 69, 0, 0.22), rgba(255, 170, 0, 0.18));
-        border-color: rgba(255, 170, 0, 0.55);
-        color: #fde68a;
-      }
-
-      /* 2. MAIN KIOSK BODY (LEFT CATEGORY RAIL + CENTER DISH GRID + SIDE AIR-FLIPPERS) */
-      .kiosk-main {
-        flex: 1;
-        min-height: 0;
-        display: grid;
-        grid-template-columns: 235px 1fr;
-        gap: 12px;
-      }
-
-      /* Left Fast-Food Category Rail */
-      .cat-rail {
-        background: var(--bg-panel);
-        border: 1.5px solid rgba(0, 240, 255, 0.25);
-        border-radius: 18px;
-        padding: 10px;
+      /* Second Row: Carved Category Inscriptions directly across the stone */
+      .category-inscriptions {
         display: flex;
-        flex-direction: column;
-        gap: 7px;
-        overflow-y: auto;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-      }
-
-      .cat-rail-header {
-        font-family: var(--font-mono);
-        font-size: 10.5px;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--holo-cyan);
-        padding: 2px 6px 4px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .cat-tile {
-        appearance: none;
-        width: 100%;
-        border: 1.5px solid rgba(255, 255, 255, 0.1);
-        background: rgba(20, 32, 54, 0.78);
-        color: #e2e8f0;
-        border-radius: 14px;
-        padding: 10px 12px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        cursor: pointer;
-        text-align: left;
-        transition: all 0.18s ease;
-        position: relative;
-        overflow: hidden;
-      }
-
-      .cat-tile-left {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-
-      .cat-icon {
-        font-size: 22px;
-        line-height: 1;
-      }
-
-      .cat-name {
-        font-family: var(--font-sans);
-        font-size: 13.5px;
-        font-weight: 800;
-        color: #fff;
-        line-height: 1.15;
-      }
-
-      .cat-count {
-        font-family: var(--font-mono);
-        font-size: 11px;
-        font-weight: 700;
-        color: var(--holo-amber);
-        background: rgba(255, 170, 0, 0.14);
-        border: 1px solid rgba(255, 170, 0, 0.35);
-        padding: 2px 7px;
-        border-radius: 999px;
-      }
-
-      .cat-tile.active {
-        background: linear-gradient(135deg, rgba(255, 69, 0, 0.34), rgba(255, 170, 0, 0.22));
-        border-color: var(--holo-amber);
-        box-shadow: 0 0 20px rgba(255, 140, 0, 0.35);
-        transform: translateX(3px);
-      }
-
-      /* Air-Target Hover Lock-On Highlight */
-      [data-air-target].air-hover {
-        border-color: var(--holo-cyan) !important;
-        box-shadow: 0 0 28px rgba(0, 240, 255, 0.75), inset 0 0 18px rgba(0, 240, 255, 0.25) !important;
-        transform: scale(1.02);
-      }
-
-      /* Right Stage: Giant Air-Flipper Left + Center Cards + Giant Air-Flipper Right */
-      .stage-wrapper {
-        display: grid;
-        grid-template-columns: 78px 1fr 78px;
-        gap: 10px;
-        min-height: 0;
-      }
-
-      .air-flipper-col {
-        appearance: none;
-        border: 2px solid rgba(0, 240, 255, 0.32);
-        background: linear-gradient(180deg, rgba(8, 22, 42, 0.9), rgba(14, 34, 62, 0.9));
-        border-radius: 18px;
-        color: #fff;
-        display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 12px;
-        cursor: pointer;
-        padding: 10px 6px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-        transition: all 0.2s ease;
-        position: relative;
+        gap: clamp(18px, 2.8vw, 44px);
+        flex-wrap: wrap;
+        margin-top: 6px;
+        padding: 8px 0;
       }
 
-      .air-flipper-col.next-col {
-        border-color: rgba(255, 170, 0, 0.45);
-        background: linear-gradient(180deg, rgba(40, 22, 10, 0.9), rgba(22, 14, 8, 0.92));
-      }
-
-      .flipper-arrow {
-        font-size: 32px;
-        font-weight: 900;
-        color: var(--holo-cyan);
-        text-shadow: 0 0 16px var(--holo-cyan);
-      }
-
-      .air-flipper-col.next-col .flipper-arrow {
-        color: var(--holo-amber);
-        text-shadow: 0 0 16px var(--holo-amber);
-      }
-
-      .flipper-label {
-        writing-mode: vertical-rl;
-        text-orientation: mixed;
-        transform: rotate(180deg);
-        font-family: var(--font-sci);
-        font-size: 12px;
+      .cat-engraving {
+        appearance: none;
+        background: none;
+        border: none;
+        font-family: var(--font-carve);
+        font-size: clamp(13px, 1.45vw, 21px);
         font-weight: 800;
         letter-spacing: 0.14em;
-        color: #e2e8f0;
-      }
-
-      .flipper-sub {
-        font-family: var(--font-mono);
-        font-size: 9.5px;
-        color: var(--holo-amber);
-        text-align: center;
-      }
-
-      /* Center Dish Page Container */
-      .menu-stage-center {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        min-height: 0;
-      }
-
-      .stage-top-bar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background: rgba(10, 18, 32, 0.9);
-        border: 1.5px solid rgba(255, 255, 255, 0.12);
-        border-radius: 14px;
-        padding: 8px 16px;
-      }
-
-      .stage-cat-title {
-        font-family: var(--font-sci);
-        font-size: clamp(16px, 2vw, 22px);
-        font-weight: 900;
-        color: #fff;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-
-      .stage-page-pill {
-        font-family: var(--font-mono);
-        font-size: 13px;
-        font-weight: 800;
-        color: var(--holo-amber);
-        background: rgba(255, 170, 0, 0.15);
-        border: 1.5px solid var(--holo-amber);
-        padding: 5px 14px;
-        border-radius: 999px;
-      }
-
-      /* 3x2 Fast-Food Kiosk Dish Cards Grid */
-      .dishes-grid {
-        flex: 1;
-        min-height: 0;
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        grid-template-rows: repeat(2, 1fr);
-        gap: 12px;
-        transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.28s ease;
-      }
-
-      .dishes-grid.flip-anim-next {
-        transform: translateX(-28px) rotateY(-6deg);
-        opacity: 0.35;
-      }
-
-      .dishes-grid.flip-anim-prev {
-        transform: translateX(28px) rotateY(6deg);
-        opacity: 0.35;
-      }
-
-      .kiosk-dish-card {
-        background: var(--bg-card);
-        border: 2px solid rgba(255, 255, 255, 0.13);
-        border-radius: 18px;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
+        text-transform: uppercase;
+        padding: 8px 4px;
         cursor: pointer;
         position: relative;
-        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.55);
-        transition: all 0.18s ease;
       }
 
-      .dish-img-wrap {
-        position: relative;
-        height: 46%;
-        min-height: 92px;
-        overflow: hidden;
-        background: #050a14;
-      }
-
-      .dish-img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        filter: saturate(1.38) contrast(1.14);
-        transition: transform 0.35s ease;
-      }
-
-      .kiosk-dish-card.air-hover .dish-img {
-        transform: scale(1.07);
-      }
-
-      .dish-nr-badge {
+      /* Chiseled groove underline only when active */
+      .cat-engraving.carved-active::after {
+        content: '';
         position: absolute;
-        top: 8px;
-        left: 8px;
-        background: rgba(3, 7, 15, 0.92);
-        border: 1.5px solid var(--holo-amber);
-        color: var(--holo-amber);
-        font-family: var(--font-sci);
-        font-size: 13px;
-        font-weight: 900;
-        padding: 4px 10px;
-        border-radius: 9px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+        left: 10%;
+        right: 10%;
+        bottom: 0;
+        height: 2px;
+        background: radial-gradient(circle, #ff9900 0%, rgba(255, 69, 0, 0) 90%);
+        box-shadow: 0 0 12px #ff6a00;
       }
 
-      .dish-veg-badge {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        background: rgba(6, 78, 59, 0.92);
-        border: 1px solid #34d399;
-        color: #a7f3d0;
-        font-family: var(--font-mono);
-        font-size: 10px;
-        font-weight: 800;
-        padding: 3px 8px;
-        border-radius: 999px;
-      }
-
-      .dish-card-body {
+      /* =====================================================================
+       * 4. CENTER CARVED INSCRIPTION FIELD (DISHES CHISELED IN THE SURFACE)
+       * ===================================================================== */
+      .center-carving-area {
         flex: 1;
-        padding: 10px 13px;
+        min-height: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        position: relative;
+      }
+
+      /* Left & Right Carved Rune Arrows (Pure carved symbols, no boxes!) */
+      .carved-stream-rune {
+        appearance: none;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 24px 12px;
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
-        gap: 6px;
-      }
-
-      .dish-card-title {
-        font-family: var(--font-sans);
-        font-size: clamp(14px, 1.35vw, 18px);
-        font-weight: 800;
-        color: #ffffff;
-        line-height: 1.2;
-      }
-
-      .dish-card-desc {
-        font-size: 12px;
-        color: #cbd5e1;
-        line-height: 1.3;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-      }
-
-      .dish-card-footer {
-        display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        padding-top: 4px;
-        border-top: 1px solid rgba(255, 255, 255, 0.08);
-      }
-
-      .dish-price-tag {
-        font-family: var(--font-sci);
-        font-size: clamp(13.5px, 1.25vw, 17.5px);
-        font-weight: 900;
-        color: var(--holo-amber);
-        text-shadow: 0 0 12px rgba(255, 170, 0, 0.35);
-        white-space: nowrap;
-      }
-
-      .dish-touch-cta {
-        font-family: var(--font-mono);
-        font-size: 10.5px;
-        font-weight: 800;
-        color: #031525;
-        background: linear-gradient(135deg, var(--holo-cyan), #38bdf8);
-        padding: 5px 10px;
-        border-radius: 8px;
-        letter-spacing: 0.03em;
-      }
-
-      /* 3. BOTTOM WINDOW-TRAY / ORDER MERKZETTEL BAR */
-      .kiosk-bottom-tray {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 14px;
-        background: rgba(7, 13, 24, 0.94);
-        border: 1.5px solid rgba(255, 170, 0, 0.4);
-        border-radius: 16px;
-        padding: 9px 16px;
-        box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.6);
-      }
-
-      .tray-left {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        overflow-x: auto;
-        flex: 1;
-      }
-
-      .tray-label {
-        font-family: var(--font-sci);
-        font-size: 12px;
-        font-weight: 800;
-        color: var(--holo-amber);
-        white-space: nowrap;
-      }
-
-      .tray-items-list {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        overflow-x: auto;
-      }
-
-      .tray-chip {
-        background: rgba(255, 170, 0, 0.15);
-        border: 1px solid rgba(255, 170, 0, 0.45);
-        color: #fff;
-        font-family: var(--font-mono);
-        font-size: 11.5px;
-        font-weight: 700;
-        padding: 4px 10px;
-        border-radius: 999px;
-        white-space: nowrap;
-      }
-
-      .tray-right {
-        display: flex;
-        align-items: center;
-        gap: 12px;
+        gap: 10px;
         flex-shrink: 0;
       }
 
-      .tray-total {
-        font-family: var(--font-sci);
-        font-size: 16px;
+      .rune-symbol {
+        font-family: var(--font-carve);
+        font-size: clamp(36px, 4.5vw, 64px);
         font-weight: 900;
-        color: #fff;
+        line-height: 1;
       }
 
-      .tray-total span {
-        color: var(--holo-amber);
+      .rune-caption {
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        transform: rotate(180deg);
+        font-family: var(--font-modern);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.25em;
       }
 
-      /* 4. LIVE CAMERA SENSOR HUD (DOCKED IN SIDEBAR) */
-      .cam-sensor-dock {
-        margin-top: auto;
-        width: 100%;
-        background: rgba(5, 10, 20, 0.96);
-        border: 1.5px solid var(--holo-cyan);
-        border-radius: 14px;
-        padding: 7px;
-        box-shadow: 0 0 18px rgba(0, 240, 255, 0.2);
+      /* The Chiseled Dish List (Pure Typography on the Surface — Zero Cards!) */
+      .inscribed-dishes-wall {
+        flex: 1;
+        max-width: 1180px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        column-gap: clamp(36px, 5vw, 88px);
+        row-gap: clamp(18px, 3.2vh, 36px);
+        align-content: center;
+        transition: opacity 0.35s ease, transform 0.35s ease;
       }
 
-      .cam-dock-header {
+      .inscribed-dishes-wall.sinking {
+        opacity: 0;
+        transform: scale(0.97) translateY(8px);
+      }
+
+      /* A single Dish Engraving: NO background, NO border, ONLY chiseled letters! */
+      .dish-engraving {
+        cursor: pointer;
+        padding: 6px 4px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        position: relative;
+      }
+
+      .dish-Headline-line {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 14px;
+      }
+
+      .dish-carved-nr {
+        font-family: var(--font-modern);
+        font-size: clamp(13px, 1.3vw, 18px);
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        margin-right: 10px;
+      }
+
+      .dish-carved-name {
+        font-family: var(--font-carve);
+        font-size: clamp(18px, 2.1vw, 29px);
+        font-weight: 900;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .dish-carved-price {
+        font-family: var(--font-carve);
+        font-size: clamp(18px, 2vw, 27px);
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+      }
+
+      .dish-carved-lore {
+        font-family: var(--font-body);
+        font-size: clamp(12px, 1.15vw, 15px);
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        line-height: 1.35;
+        opacity: 0.82;
+        padding-left: 2px;
+      }
+
+      /* =====================================================================
+       * 5. MONUMENTAL SINGLE-DISH ENGRAVING (WHEN A DISH IS SELECTED)
+       *    Still 100% carved into the same surface — NO modal box!
+       * ===================================================================== */
+      .monument-focus-view {
+        display: none;
+        flex: 1;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 12px;
+        max-width: 900px;
+        margin: 0 auto;
+      }
+
+      .monument-focus-view.active {
+        display: flex;
+      }
+
+      .monument-nr {
+        font-family: var(--font-modern);
+        font-size: clamp(15px, 1.5vw, 21px);
+        font-weight: 900;
+        letter-spacing: 0.3em;
+      }
+
+      .monument-title {
+        font-family: var(--font-carve);
+        font-size: clamp(30px, 4.2vw, 60px);
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        line-height: 1.08;
+      }
+
+      .monument-ingredients {
+        font-family: var(--font-body);
+        font-size: clamp(15px, 1.5vw, 20px);
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        max-width: 720px;
+        line-height: 1.45;
+      }
+
+      .monument-price {
+        font-family: var(--font-carve);
+        font-size: clamp(26px, 3.4vw, 48px);
+        font-weight: 900;
+        letter-spacing: 0.08em;
+      }
+
+      .monument-runes-row {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        font-family: var(--font-mono);
-        font-size: 9.5px;
-        font-weight: 800;
-        color: var(--holo-cyan);
-        margin-bottom: 5px;
+        justify-content: center;
+        gap: clamp(24px, 3.6vw, 52px);
+        flex-wrap: wrap;
+        margin-top: 6px;
       }
 
-      .cam-preview-box {
-        position: relative;
-        width: 100%;
-        height: 92px;
-        background: #02050a;
-        border-radius: 9px;
-        overflow: hidden;
-        border: 1px solid rgba(0, 240, 255, 0.3);
+      .monument-action-word {
+        appearance: none;
+        background: none;
+        border: none;
+        font-family: var(--font-carve);
+        font-size: clamp(15px, 1.75vw, 24px);
+        font-weight: 900;
+        letter-spacing: 0.14em;
+        padding: 8px 6px;
+        cursor: pointer;
+        text-transform: uppercase;
+      }
+
+      /* =====================================================================
+       * 6. CAMERA SETUP ENGRAVING VIEW (ALSO 100% CARVED LETTERS, NO BOX!)
+       * ===================================================================== */
+      .setup-engraving-view {
+        display: none;
+        flex: 1;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 14px;
+        max-width: 820px;
+        margin: 0 auto;
+      }
+
+      .setup-engraving-view.active {
+        display: flex;
+      }
+
+      /* =====================================================================
+       * 7. BOTTOM CARVED INSCRIPTION LINE (REMEMBERED NUMBERS & HINT)
+       * ===================================================================== */
+      .bottom-inscriptions {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+
+      .engraved-tray-line {
+        display: flex;
+        align-items: baseline;
+        gap: 16px;
+        flex-wrap: wrap;
+        font-family: var(--font-carve);
+        font-size: clamp(13px, 1.3vw, 18px);
+        font-weight: 800;
+        letter-spacing: 0.1em;
+      }
+
+      .gesture-whisper {
+        font-family: var(--font-modern);
+        font-size: clamp(10px, 0.95vw, 12.5px);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      /* Subtle Frameless Camera Ghost in Bottom-Right (No border, blended into stone) */
+      .ghost-cam-watermark {
+        position: fixed;
+        bottom: 18px;
+        right: 24px;
+        width: 140px;
+        height: 84px;
+        z-index: 5;
+        pointer-events: none;
+        opacity: 0.55;
+        -webkit-mask-image: radial-gradient(circle, #000 45%, transparent 78%);
+        mask-image: radial-gradient(circle, #000 45%, transparent 78%);
       }
 
       #cam-video {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        opacity: 0.45;
+        opacity: 0.35;
+        filter: sepia(0.8) hue-rotate(-20deg) contrast(1.4);
       }
 
       #cam-video.mirrored {
@@ -692,43 +553,9 @@
         height: 100%;
       }
 
-      .cam-zones-guide {
-        position: absolute;
-        inset: 0;
-        display: grid;
-        grid-template-columns: 24% 52% 24%;
-        pointer-events: none;
-        font-family: var(--font-mono);
-        font-size: 9px;
-        font-weight: 800;
-      }
-
-      .cam-zone-l,
-      .cam-zone-r {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(0, 240, 255, 0.06);
-        border-right: 1px dashed rgba(0, 240, 255, 0.35);
-        color: rgba(0, 240, 255, 0.85);
-      }
-
-      .cam-zone-r {
-        border-right: none;
-        border-left: 1px dashed rgba(255, 170, 0, 0.45);
-        background: rgba(255, 170, 0, 0.06);
-        color: rgba(255, 170, 0, 0.9);
-      }
-
-      .cam-zone-c {
-        display: flex;
-        align-items: flex-end;
-        justify-content: center;
-        padding-bottom: 4px;
-        color: rgba(255, 255, 255, 0.65);
-      }
-
-      /* 5. VIRTUAL AIR-CURSOR ("TocuH" 2.0 HAND POINTER + DWELL PROGRESS RING) */
+      /* =====================================================================
+       * 8. FLOATING CHISEL EMBER LIGHT CURSOR (NO UI GADGET, JUST WARM FLAME)
+       * ===================================================================== */
       #air-cursor {
         position: fixed;
         top: 50%;
@@ -742,471 +569,367 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: transform 0.04s linear;
       }
 
       #air-cursor svg {
         width: 68px;
         height: 68px;
         transform: rotate(-90deg);
-        filter: drop-shadow(0 0 10px var(--holo-cyan));
+        filter: drop-shadow(0 0 10px rgba(255, 120, 0, 0.85));
       }
 
-      .air-cursor-core {
+      .ember-spark-core {
         position: absolute;
-        width: 30px;
-        height: 30px;
+        width: 14px;
+        height: 14px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(0, 240, 255, 0.95) 0%, rgba(0, 240, 255, 0.2) 70%);
-        border: 2px solid #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 15px;
-        box-shadow: 0 0 18px var(--holo-cyan);
+        background: radial-gradient(circle, #fff8e7 0%, #ff9900 55%, rgba(255, 69, 0, 0) 100%);
+        box-shadow: 0 0 24px #ff7700, 0 0 45px #ff3300;
+        transition: transform 0.15s ease;
       }
 
-      #air-cursor.clicking .air-cursor-core {
-        transform: scale(1.35);
-        background: radial-gradient(circle, #ffaa00 0%, #ff4500 80%);
-        box-shadow: 0 0 30px #ffaa00;
+      #air-cursor.clicking .ember-spark-core {
+        transform: scale(2.4);
+        box-shadow: 0 0 40px #ffffff, 0 0 80px #ffaa00;
       }
 
-      /* Gesture Feedback Banner */
-      .gesture-toast {
-        position: fixed;
-        top: 78px;
-        left: 50%;
-        transform: translateX(-50%) translateY(-20px);
-        background: rgba(3, 12, 26, 0.95);
-        border: 2px solid var(--holo-cyan);
-        color: #fff;
-        font-family: var(--font-sci);
-        font-size: 14px;
-        font-weight: 900;
-        padding: 10px 22px;
-        border-radius: 999px;
-        box-shadow: 0 0 30px rgba(0, 240, 255, 0.6);
-        z-index: 500;
-        opacity: 0;
-        pointer-events: none;
-        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-      }
-
-      .gesture-toast.show {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-      }
-
-      /* 6. MODALS (DISH DETAIL MODAL + CAMERA SETUP MODAL) */
-      .kiosk-modal-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(2, 6, 14, 0.86);
-        backdrop-filter: blur(14px);
-        z-index: 300;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-      }
-
-      .kiosk-modal-backdrop.open {
-        display: flex;
-      }
-
-      .kiosk-modal-card {
-        width: min(760px, 95vw);
-        background: #081120;
-        border: 2px solid var(--holo-amber);
-        border-radius: 24px;
-        overflow: hidden;
-        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.9), 0 0 40px rgba(255, 170, 0, 0.25);
-        display: flex;
-        flex-direction: column;
-      }
-
-      .modal-hero {
-        position: relative;
-        height: 250px;
-        background: #030710;
-      }
-
-      .modal-hero img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        filter: saturate(1.4) contrast(1.15);
-      }
-
-      .modal-body {
-        padding: 22px;
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-      }
-
-      .modal-actions {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 14px;
-        margin-top: 6px;
-      }
-
-      .modal-big-btn {
-        appearance: none;
-        border: 2px solid var(--holo-emerald);
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(5, 150, 105, 0.5));
-        color: #fff;
-        font-family: var(--font-sci);
-        font-size: 15px;
-        font-weight: 900;
-        padding: 16px;
-        border-radius: 16px;
-        cursor: pointer;
-        text-align: center;
-      }
-
-      .modal-big-btn.close-variant {
-        border-color: rgba(255, 255, 255, 0.3);
-        background: rgba(30, 41, 59, 0.85);
-      }
-
-      /* Setup Form Controls */
-      .setup-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 10px 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      }
-
-      .setup-select {
-        background: #0f172a;
-        color: #fff;
-        border: 1.5px solid var(--holo-cyan);
-        padding: 8px 12px;
-        border-radius: 10px;
-        font-family: var(--font-sans);
-        font-size: 13px;
-      }
-
-      /* Responsive Adjustments for Tablet / Mobile Portrait */
-      @media (max-width: 1024px) {
-        .kiosk-main {
+      @media (max-width: 900px) {
+        .inscribed-dishes-wall {
           grid-template-columns: 1fr;
-          grid-template-rows: auto 1fr;
+          row-gap: 14px;
         }
-        .cat-rail {
-          flex-direction: row;
-          overflow-x: auto;
-          overflow-y: hidden;
-          padding: 8px;
-        }
-        .cat-rail-header {
-          display: none;
-        }
-        .cat-tile {
-          min-width: 155px;
-          padding: 8px 10px;
-        }
-        .dishes-grid {
-          grid-template-columns: repeat(2, 1fr);
-        }
-        .stage-wrapper {
-          grid-template-columns: 54px 1fr 54px;
-        }
-        .cam-sensor-dock {
-          width: 175px;
-          bottom: 62px;
-          right: 12px;
-        }
-        .cam-preview-box {
-          height: 88px;
+        .carved-stream-rune {
+          padding: 10px 4px;
         }
       }
     </style>
   </head>
   <body>
-    <!-- Subtle Shop-Window Glass Overlay -->
-    <div class="window-glass-sheen"></div>
+    <!-- 1. LIVING STONE / OBSIDIAN / MAGMA SURFACE CANVAS -->
+    <canvas id="surface-canvas"></canvas>
 
-    <!-- Floating Gesture Notification Toast -->
-    <div class="gesture-toast" id="gesture-toast">
-      👋 AIR-SWIPE ERKANNT · BLÄTTERE WEITER!
+    <!-- Frameless Organic Dish Essence in the Surface -->
+    <div class="surface-dish-essence" id="surface-essence">
+      <img id="essence-img" src="img/food-grillteller.webp" alt="" />
     </div>
 
-    <!-- Virtual "TocuH" 2.0 Air-Cursor -->
+    <!-- Dynamic Torchlight following Viewer / Hand -->
+    <div class="surface-torchlight"></div>
+
+    <!-- Frameless Ghost Camera Watermark -->
+    <div class="ghost-cam-watermark">
+      <video id="cam-video" class="mirrored" playsinline muted></video>
+      <canvas id="cam-overlay-canvas" width="140" height="84"></canvas>
+    </div>
+
+    <!-- Floating Ember Light Cursor -->
     <div id="air-cursor">
       <svg viewBox="0 0 68 68">
-        <circle
-          cx="34"
-          cy="34"
-          r="29"
-          fill="none"
-          stroke="rgba(0, 240, 255, 0.22)"
-          stroke-width="4"
-        />
         <circle
           id="dwell-ring"
           cx="34"
           cy="34"
-          r="29"
+          r="28"
           fill="none"
-          stroke="#ffaa00"
-          stroke-width="5"
+          stroke="rgba(255, 165, 50, 0.9)"
+          stroke-width="3.5"
           stroke-linecap="round"
-          stroke-dasharray="182.2"
-          stroke-dashoffset="182.2"
+          stroke-dasharray="175.9"
+          stroke-dashoffset="175.9"
         />
       </svg>
-      <div class="air-cursor-core" id="air-cursor-icon">✋</div>
+      <div class="ember-spark-core"></div>
     </div>
 
-    <!-- Main Kiosk Shell -->
-    <div class="kiosk-viewport">
-      <!-- 1. TOP KIOSK HEADER -->
-      <header class="kiosk-header">
-        <div class="brand-cluster">
-          <div class="tocuh-badge">
-            <span class="tocuh-dot"></span>
-            <span class="tocuh-title">"TocuH" 2.0 V1</span>
+    <!-- =====================================================================
+         2. PURE CARVED LETTERS ON THE SURFACE (ZERO BOXES EVERYWHERE)
+         ===================================================================== -->
+    <div class="surface-stage">
+      <!-- Top Carved Header & System Words -->
+      <div>
+        <header class="top-inscriptions">
+          <div class="brand-engraving">
+            <span class="brand-word carved-monument">LAVA GRILL</span>
+            <span class="brand-subword carved-text" id="surface-status-text">
+              "TocuH" 2.0 V1 · IN STEIN GESCHNITZTE SPEISEKARTE
+            </span>
           </div>
-          <div>
-            <div style="font-weight: 800; font-size: 13.5px; color: #fff">
-              LAVA GRILL · SCHAUFENSTER-TERMINAL HINTER GLAS
-            </div>
-            <div class="tocuh-sub" id="tracking-mode-Readout">
-              🪟 BERÜHRUNGSLOS PER KAMERA BLÄTTERN & AUSWÄHLEN
-            </div>
-          </div>
-        </div>
 
-        <div class="gesture-status-bar">
-          <span class="gesture-chip">✋ <strong>0,8s Halten</strong> = Klick</span>
-          <span class="gesture-chip">👋 <strong>Wischen L/R</strong> = Umblättern</span>
-          <span class="gesture-chip">👌 <strong>Pinch</strong> = Direkt-Klick</span>
-        </div>
-
-        <div class="header-actions">
-          <button class="kiosk-btn cam-btn" id="btn-toggle-cam" data-air-target>
-            📹 Kamera starten (Live)
-          </button>
-          <button class="kiosk-btn demo-btn active" id="btn-toggle-demo" data-air-target>
-            🤖 Auto-Passant
-          </button>
-          <button class="kiosk-btn" id="btn-open-setup" data-air-target>
-            ⚙️ Kamera-Setup
-          </button>
-          <button class="kiosk-btn" id="btn-fullscreen" data-air-target>
-            ⛶ Vollbild (Monitor)
-          </button>
-          <a class="kiosk-btn link-v6" href="../lava-ar-v6/index.html" id="link-parallax-v6" data-air-target>
-            📡 Parallax V6
-          </a>
-        </div>
-      </header>
-
-      <!-- 2. PARALLAX KIOSK STAGE -->
-      <div class="kiosk-parallax-stage" id="parallax-stage">
-        <div class="kiosk-main">
-          <!-- Left Fast-Food Category Rail -->
-          <aside class="cat-rail" id="cat-rail">
-            <div class="cat-rail-header">
-              <span>📂 KATEGORIEN</span>
-              <span id="cat-total-badge">92 GERICHTE</span>
-            </div>
-            <div id="cat-buttons-container" style="display: contents"></div>
-
-            <!-- Live Camera & Motion Radar Dock cleanly integrated in Sidebar -->
-            <div class="cam-sensor-dock" id="cam-sensor-dock">
-              <div class="cam-dock-header">
-                <span id="cam-dock-status">📡 SENSOR: AUTO-SIM</span>
-                <span id="cam-fps-badge" style="color: var(--holo-amber)">60 FPS</span>
-              </div>
-              <div class="cam-preview-box">
-                <video id="cam-video" class="mirrored" playsinline muted></video>
-                <canvas id="cam-overlay-canvas" width="220" height="92"></canvas>
-                <div class="cam-zones-guide">
-                  <div class="cam-zone-l">◀ ZURÜCK</div>
-                  <div class="cam-zone-c">✋ AIR-CURSOR</div>
-                  <div class="cam-zone-r">WEITER ▶</div>
-                </div>
-              </div>
-            </div>
-          </aside>
-
-          <!-- Center Stage with Left & Right Giant Air-Flipper Columns -->
-          <div class="stage-wrapper">
-            <!-- Left Air-Flipper Zone -->
-            <button class="air-flipper-col prev-col" id="btn-prev-page" data-air-target>
-              <span class="flipper-arrow">◀</span>
-              <span class="flipper-label">ZURÜCK BLÄTTERN</span>
-              <span class="flipper-sub">✋ HALTEN ODER WISCHEN</span>
+          <nav class="system-runes">
+            <button class="rune-btn carved-system" id="btn-toggle-cam" data-air-target>
+              KAMERA STARTEN
             </button>
-
-            <!-- Center 3x2 Fast-Food Dish Grid -->
-            <main class="menu-stage-center">
-              <div class="stage-top-bar">
-                <div class="stage-cat-title" id="active-cat-heading">
-                  🔥 HIGHLIGHTS & BESTSELLER
-                </div>
-                <div style="display: flex; align-items: center; gap: 10px">
-                  <button
-                    class="kiosk-btn"
-                    id="btn-next-cat"
-                    data-air-target
-                    style="padding: 5px 12px; font-size: 10.5px; border-color: var(--holo-cyan)"
-                  >
-                    ⏭️ Nächste Kategorie
-                  </button>
-                  <div class="stage-page-pill" id="page-indicator">SEITE 1 / 2</div>
-                </div>
-              </div>
-
-              <div class="dishes-grid" id="dishes-grid"></div>
-            </main>
-
-            <!-- Right Air-Flipper Zone -->
-            <button class="air-flipper-col next-col" id="btn-next-page" data-air-target>
-              <span class="flipper-arrow">▶</span>
-              <span class="flipper-label">WEITER BLÄTTERN</span>
-              <span class="flipper-sub">✋ HALTEN ODER WISCHEN</span>
+            <button class="rune-btn carved-system" id="btn-surface-mat" data-air-target>
+              OBERFLÄCHE: VULKAN-BASALT
             </button>
-          </div>
-        </div>
-
-        <!-- 3. BOTTOM SCHAUFENSTER-MERKZETTEL BAR -->
-        <footer class="kiosk-bottom-tray">
-          <div class="tray-left">
-            <span class="tray-label">🧾 MEINE SCHAUFENSTER-AUSWAHL:</span>
-            <div class="tray-items-list" id="tray-items-list">
-              <span style="font-size: 12px; color: var(--text-muted)">
-                Halte deine Hand 0,8s auf ein Gericht, um Details zu sehen oder Nummern für den Tresen zu merken!
-              </span>
-            </div>
-          </div>
-          <div class="tray-right">
-            <div class="tray-total">
-              GESAMT: <span id="tray-total-price">0,00 €</span>
-            </div>
-            <button
-              class="kiosk-btn"
-              id="btn-clear-tray"
+            <button class="rune-btn carved-system" id="btn-open-setup" data-air-target>
+              KALIBRIERUNG
+            </button>
+            <button class="rune-btn carved-system" id="btn-fullscreen" data-air-target>
+              VOLLBILD
+            </button>
+            <a
+              class="rune-btn carved-system"
+              href="../lava-ar-v6/index.html"
+              id="link-parallax-v6"
               data-air-target
-              style="border-color: rgba(255, 69, 0, 0.5); color: #fca5a5"
             >
-              🗑️ Leeren
-            </button>
-          </div>
-        </footer>
+              PARALLAX V6
+            </a>
+          </nav>
+        </header>
+
+        <!-- Carved Category Words directly on the Surface -->
+        <nav class="category-inscriptions" id="category-inscriptions"></nav>
       </div>
-    </div>
 
-    <!-- 5. DISH SPOTLIGHT MODAL (HANDS-FREE COMPATIBLE) -->
-    <div class="kiosk-modal-backdrop" id="dish-modal">
-      <div class="kiosk-modal-card">
-        <div class="modal-hero">
-          <img id="modal-dish-img" src="img/food-grillteller.webp" alt="Gericht" />
-          <div
-            class="dish-nr-badge"
-            id="modal-dish-nr"
-            style="font-size: 18px; padding: 6px 14px; top: 14px; left: 14px"
-          >
-            Nr. 67
-          </div>
-        </div>
-        <div class="modal-body">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px">
-            <div>
-              <h2
-                id="modal-dish-title"
-                style="font-family: var(--font-sci); font-size: 24px; color: #fff"
-              >
-                SPEZIAL GRILLTELLER
-              </h2>
-              <p id="modal-dish-desc" style="color: #cbd5e1; font-size: 14px; margin-top: 4px">
-                1 Adana Kebab, 1 Lammkotelett, 1 Nackensteak, 1 Hähnchenbrustfilet, Gyros
-              </p>
-            </div>
-            <div
-              id="modal-dish-price"
-              style="font-family: var(--font-sci); font-size: 26px; font-weight: 900; color: var(--holo-amber); white-space: nowrap"
-            >
-              19,50 €
-            </div>
-          </div>
+      <!-- Center Carving Area: Either the Inscribed Dish Wall, Single Dish Monument, or Setup Engraving -->
+      <main class="center-carving-area">
+        <!-- Left Carved Rune Symbol -->
+        <button class="carved-stream-rune carved-text" id="btn-prev-carve" data-air-target>
+          <span class="rune-symbol">‹</span>
+          <span class="rune-caption">ZURÜCK</span>
+        </button>
 
-          <div
-            id="modal-size-options"
-            style="display: flex; gap: 10px; flex-wrap: wrap"
-          ></div>
+        <!-- View A: Inscribed Dishes Wall (Pure carved words, no boxes) -->
+        <div class="inscribed-dishes-wall" id="dishes-wall"></div>
 
-          <div class="modal-actions">
-            <button class="modal-big-btn" id="btn-modal-add" data-air-target>
-              ➕ AUF MERKZETTEL SETZEN
-            </button>
-            <button class="modal-big-btn close-variant" id="btn-modal-close" data-air-target>
-              ✕ WEITER BLÄTTERN
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 6. CAMERA PLACEMENT & CALIBRATION MODAL -->
-    <div class="kiosk-modal-backdrop" id="setup-modal">
-      <div class="kiosk-modal-card" style="border-color: var(--holo-cyan)">
-        <div class="modal-body">
-          <h2 style="font-family: var(--font-sci); font-size: 20px; color: var(--holo-cyan)">
-            ⚙️ KAMERA-AUFSTELLUNG & MONITOR-KALIBRIERUNG
-          </h2>
-          <p style="font-size: 13px; color: #cbd5e1">
-            Egal ob deine Kamera direkt am Monitor klebt oder weiter hinten im Raum steht: Hier kannst du Kamera, Spiegelung und Empfindlichkeit sofort anpassen.
+        <!-- View B: Monumental Single-Dish Engraving (Pure carved words, no modal box) -->
+        <div class="monument-focus-view" id="monument-view">
+          <div class="monument-nr carved-Active" id="monument-nr">NR. 67</div>
+          <h1 class="monument-title carved-monument carved-active" id="monument-title">
+            SPEZIAL TELLER
+          </h1>
+          <p class="monument-ingredients carved-text" id="monument-desc">
+            1 Adana Kebab · 1 Lammkotelett · 1 Nackensteak · 1 Hähnchenbrustfilet · Gyros
           </p>
-
-          <div class="setup-row">
-            <span>📹 <strong>Kamera-Gerät auswählen:</strong></span>
-            <select class="setup-select" id="camera-select">
-              <option value="">Standard-Kamera (Webcam / USB)</option>
-            </select>
+          <div class="monument-price carved-monument carved-active" id="monument-price">
+            19,50 €
           </div>
-
-          <div class="setup-row">
-            <span>↔️ <strong>Horizontal spiegeln</strong> (An = Kamera schaut zu dir):</span>
-            <button class="kiosk-btn cam-btn active" id="btn-toggle-mirror" data-air-target>
-              Spiegelung: AN
+          <div class="monument-runes-row" id="monument-sizes"></div>
+          <div class="monument-runes-row">
+            <button
+              class="monument-action-word carved-text carved-active"
+              id="btn-monument-remember"
+              data-air-target
+            >
+              ✦ NUMMER MERKEN
             </button>
-          </div>
-
-          <div class="setup-row">
-            <span>⏱️ <strong>Hover-Klick-Dauer</strong> (Haltezeit für Klick):</span>
-            <select class="setup-select" id="dwell-select">
-              <option value="600">Schnell (0,6 Sekunden)</option>
-              <option value="850" selected>Standard (0,85 Sekunden)</option>
-              <option value="1200">Entspannt (1,2 Sekunden)</option>
-            </select>
-          </div>
-
-          <div class="modal-actions">
-            <button class="modal-big-btn" id="btn-setup-start-cam" data-air-target>
-              📹 KAMERA JETZT AKTIVIEREN
-            </button>
-            <button class="modal-big-btn close-variant" id="btn-setup-close" data-air-target>
-              ✓ FERTIG & SCHLIESSEN
+            <button
+              class="monument-action-word carved-text"
+              id="btn-monument-back"
+              data-air-target
+            >
+              ↩ ZURÜCK ZUR OBERFLÄCHE
             </button>
           </div>
         </div>
-      </div>
+
+        <!-- View C: Camera Calibration Engraving (Pure carved words, no box!) -->
+        <div class="setup-engraving-view" id="setup-view">
+          <h2 class="monument-title carved-monument" style="font-size: clamp(24px, 3.2vw, 44px)">
+            KAMERA & MONITOR KALIBRIERUNG
+          </h2>
+          <p class="monument-ingredients carved-text">
+            Wähle mit deiner Hand oder Maus, wie deine Kamera vor oder hinter dem Monitor ausgerichtet ist:
+          </p>
+          <div class="monument-runes-row">
+            <button
+              class="monument-action-word carved-text carved-active"
+              id="btn-setup-cam-cycle"
+              data-air-target
+            >
+              KAMERA: STANDARD-SENSOR
+            </button>
+            <button
+              class="monument-action-word carved-text carved-active"
+              id="btn-setup-mirror"
+              data-air-target
+            >
+              SPIEGELUNG: AN (VOR MONITOR)
+            </button>
+          </div>
+          <div class="monument-runes-row">
+            <button
+              class="monument-action-word carved-text carved-active"
+              id="btn-setup-dwell"
+              data-air-target
+            >
+              HALTEZEIT: 0,8 SEKUNDEN
+            </button>
+            <button
+              class="monument-action-word carved-text"
+              id="btn-setup-done"
+              data-air-target
+            >
+              ✓ ZURÜCK ZUR SPEISEKARTE
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Carved Rune Symbol -->
+        <button class="carved-stream-rune carved-text" id="btn-next-carve" data-air-target>
+          <span class="rune-symbol">›</span>
+          <span class="rune-caption">WEITER</span>
+        </button>
+      </main>
+
+      <!-- Bottom Carved Inscriptions -->
+      <footer class="bottom-inscriptions">
+        <div class="engraved-tray-line carved-text" id="engraved-tray">
+          <span>GEMERKTE NUMMERN:</span>
+          <span id="tray-words">KEINE — HALTE KURZ AUF EIN GERICHT ZUM EINGRAVIEREN</span>
+          <button
+            class="rune-btn carved-system"
+            id="btn-clear-tray"
+            data-air-target
+            style="display: none"
+          >
+            [ LÖSCHEN ]
+          </button>
+        </div>
+
+        <div class="gesture-whisper carved-text" id="gesture-whisper">
+          BEWEGE DEINE HAND · LICHT & GRAVUR FOLGEN DEINEM BLICKWINKEL
+        </div>
+      </footer>
     </div>
 
     <script type="module">
       import { kategorien } from './menu.js'
 
-      /* -------------------------------------------------------------
-       * 1. FAST-FOOD KIOSK CATEGORIES & HDR FOOD PHOTO MAPPING
-       * ------------------------------------------------------------- */
+      /* =====================================================================
+       * 1. PROCEDURAL VOLCANIC BASALT / OBSIDIAN / MAGMA SURFACE RENDERER
+       * ===================================================================== */
+      const sCanvas = document.getElementById('surface-canvas')
+      const sCtx = sCanvas.getContext('2d')
+
+      const SURFACE_THEMES = [
+        {
+          name: 'VULKAN-BASALT',
+          baseDark: '#0b0a09',
+          baseMid: '#171412',
+          veinColor: 'rgba(255, 85, 15, 0.14)',
+          grainAlpha: 0.06,
+        },
+        {
+          name: 'SCHWARZER OBSIDIAN',
+          baseDark: '#04060a',
+          baseMid: '#0d131d',
+          veinColor: 'rgba(0, 210, 255, 0.11)',
+          grainAlpha: 0.04,
+        },
+        {
+          name: 'MAGMA-SCHiefer',
+          baseDark: '#120806',
+          baseMid: '#22100b',
+          veinColor: 'rgba(255, 140, 0, 0.18)',
+          grainAlpha: 0.075,
+        },
+      ]
+      let currentThemeIdx = 0
+
+      // Pre-generate seamless stone relief texture buffer
+      const stonePatternCvs = document.createElement('canvas')
+      stonePatternCvs.width = 512
+      stonePatternCvs.height = 512
+      const spCtx = stonePatternCvs.getContext('2d')
+
+      function generateStoneGrain() {
+        const theme = SURFACE_THEMES[currentThemeIdx]
+        spCtx.fillStyle = theme.baseDark
+        spCtx.fillRect(0, 0, 512, 512)
+
+        // Organic stone reliefs & chisel striations
+        for (let i = 0; i < 1800; i++) {
+          const x = Math.random() * 512
+          const y = Math.random() * 512
+          const r = 1 + Math.random() * 3.5
+          const bright = Math.random() > 0.5
+          spCtx.fillStyle = bright
+            ? `rgba(255, 240, 220, ${theme.grainAlpha})`
+            : `rgba(0, 0, 0, ${theme.grainAlpha * 2.2})`
+          spCtx.beginPath()
+          spCtx.arc(x, y, r, 0, Math.PI * 2)
+          spCtx.fill()
+        }
+
+        // Subtle volcanic fractures
+        spCtx.strokeStyle = theme.veinColor
+        spCtx.lineWidth = 1.2
+        for (let c = 0; c < 7; c++) {
+          let cx = Math.random() * 512
+          let cy = Math.random() * 512
+          spCtx.beginPath()
+          spCtx.moveTo(cx, cy)
+          for (let s = 0; s < 12; s++) {
+            cx += (Math.random() - 0.5) * 65
+            cy += (Math.random() - 0.5) * 65
+            spCtx.lineTo(cx, cy)
+          }
+          spCtx.stroke()
+        }
+      }
+      generateStoneGrain()
+
+      // Floating glowing magma embers embedded in the background surface
+      const EMBERS = Array.from({ length: 42 }, () => ({
+        x: Math.random(),
+        y: Math.random(),
+        r: 1 + Math.random() * 2.5,
+        vy: 0.00015 + Math.random() * 0.00035,
+        phase: Math.random() * Math.PI * 2,
+      }))
+
+      function resizeSurface() {
+        sCanvas.width = window.innerWidth
+        sCanvas.height = window.innerHeight
+      }
+      resizeSurface()
+      window.addEventListener('resize', resizeSurface)
+
+      function drawLivingSurface(now, normX, normY) {
+        const w = sCanvas.width
+        const h = sCanvas.height
+        const theme = SURFACE_THEMES[currentThemeIdx]
+
+        // 1. Deep Radial Stone Base shifting with Viewer Parallax (-normX, -normY)
+        const gx = w * (0.5 - normX * 0.12)
+        const gy = h * (0.45 - normY * 0.12)
+        const bgGrad = sCtx.createRadialGradient(gx, gy, 40, w * 0.5, h * 0.5, Math.max(w, h) * 0.78)
+        bgGrad.addColorStop(0, theme.baseMid)
+        bgGrad.addColorStop(1, theme.baseDark)
+        sCtx.fillStyle = bgGrad
+        sCtx.fillRect(0, 0, w, h)
+
+        // 2. Tiled Stone Relief with subtle parallax offset
+        const pat = sCtx.createPattern(stonePatternCvs, 'repeat')
+        if (pat) {
+          sCtx.save()
+          sCtx.translate(-normX * 18, -normY * 14)
+          sCtx.globalAlpha = 0.65
+          sCtx.fillStyle = pat
+          sCtx.fillRect(-40, -40, w + 80, h + 80)
+          sCtx.restore()
+        }
+
+        // 3. Subtle Magma Glow Nodes rising beneath the carved letters
+        EMBERS.forEach((e) => {
+          e.y -= e.vy
+          if (e.y < -0.05) e.y = 1.05
+          const ex = (e.x - normX * 0.03) * w
+          const ey = (e.y - normY * 0.02) * h
+          const alpha = 0.25 + 0.2 * Math.sin(now * 0.003 + e.phase)
+          sCtx.fillStyle = `rgba(255, 130, 30, ${alpha})`
+          sCtx.beginPath()
+          sCtx.arc(ex, ey, e.r, 0, Math.PI * 2)
+          sCtx.fill()
+        })
+      }
+
+      /* =====================================================================
+       * 2. BUILD ALL 92 DISHES & CARVED CATEGORIES
+       * ===================================================================== */
       function getPhotoForDish(katId, dish) {
         const nameLow = dish.name.toLowerCase()
         if (dish.nr === 67 || nameLow.includes('spezial teller') || nameLow.includes('lava teller'))
@@ -1238,7 +961,6 @@
         return 'img/lava.webp'
       }
 
-      // Flatten all dishes with category reference
       const allDishes = []
       kategorien.forEach((k) => {
         k.gerichte.forEach((g) => {
@@ -1257,59 +979,48 @@
         })
       })
 
-      // Build Fast-Food Self-Order Category Groups
       const highlightOrder = [67, 55, 22, 28, 64, 9, 13, 57, 71, 29, 68, 74]
-      const KIOSK_CATEGORIES = [
+      const CARVED_CATEGORIES = [
         {
           id: 'highlights',
-          icon: '🔥',
-          name: 'Highlights & Bestseller',
-          items: highlightOrder
-            .map((nr) => allDishes.find((d) => d.nr === nr))
-            .filter(Boolean),
+          name: 'HIGHLIGHTS',
+          items: highlightOrder.map((nr) => allDishes.find((d) => d.nr === nr)).filter(Boolean),
         },
         {
           id: 'grill',
-          icon: '🥩',
-          name: 'Vom Lavastein-Grill',
+          name: 'LAVAGRILL',
           items: allDishes.filter((d) => d.katId === 'grill'),
         },
         {
           id: 'fleisch',
-          icon: '🥙',
-          name: 'Drehspieß, Döner & Dürüm',
+          name: 'DREHSPIESS & DÖNER',
           items: allDishes.filter((d) => d.katId === 'fleisch' || d.katId === 'vegetarisch'),
         },
         {
           id: 'pizza',
-          icon: '🍕',
-          name: 'Steinofen-Pizza',
+          name: 'STEINOFEN-PIZZA',
           items: allDishes.filter((d) => d.katId === 'pizza'),
         },
         {
-          id: 'calzone_rollo',
-          icon: '🥟',
-          name: 'Calzone, Rollo & Baguette',
+          id: 'calzone',
+          name: 'CALZONE & ROLLO',
           items: allDishes.filter((d) =>
             ['calzone', 'rollo', 'baguette', 'ueberbacken'].includes(d.katId)
           ),
         },
         {
-          id: 'salate_vorspeisen',
-          icon: '🥗',
-          name: 'Salate & Vorspeisen',
+          id: 'salate',
+          name: 'SALATE & VORSPEISEN',
           items: allDishes.filter((d) => ['salate', 'vorspeisen'].includes(d.katId)),
         },
         {
-          id: 'schnitzel_nudeln',
-          icon: '🍔',
-          name: 'Schnitzel, Pasta & Kids',
+          id: 'schnitzel',
+          name: 'SCHNITZEL & PASTA',
           items: allDishes.filter((d) => ['schnitzel', 'nudeln', 'kids'].includes(d.katId)),
         },
         {
-          id: 'beilagen_sossen',
-          icon: '🍟',
-          name: 'Beilagen & Haus-Soßen',
+          id: 'beilagen',
+          name: 'BEILAGEN & SOSSEN',
           items: allDishes.filter((d) => ['beilagen', 'sossen'].includes(d.katId)),
         },
       ]
@@ -1318,276 +1029,262 @@
         return Number(val).toFixed(2).replace('.', ',') + ' €'
       }
 
-      /* -------------------------------------------------------------
-       * 2. KIOSK STATE, PAGINATION & RENDERING
-       * ------------------------------------------------------------- */
+      /* =====================================================================
+       * 3. CARVED INSCRIPTION RENDERING (ZERO BOXES, ONLY LETTERS)
+       * ===================================================================== */
       let activeCatIdx = 0
-      let currentPage = 0
-      const ITEMS_PER_PAGE = 6
-      const selectedTray = []
-      let activeModalDish = null
+      let batchOffset = 0
+      const BATCH_SIZE = 6
+      let activeMonumentDish = null
+      let selectedSizeIdx = 0
+      const rememberedList = []
 
-      const catButtonsContainer = document.getElementById('cat-buttons-container')
-      const dishesGrid = document.getElementById('dishes-grid')
-      const activeCatHeading = document.getElementById('active-cat-heading')
-      const pageIndicator = document.getElementById('page-indicator')
-      const gestureToast = document.getElementById('gesture-toast')
-      let toastTimer = null
+      const catNav = document.getElementById('category-inscriptions')
+      const dishesWall = document.getElementById('dishes-wall')
+      const monumentView = document.getElementById('monument-view')
+      const setupView = document.getElementById('setup-view')
+      const essenceImg = document.getElementById('essence-img')
+      const gestureWhisper = document.getElementById('gesture-whisper')
 
-      function showGestureToast(msg) {
-        gestureToast.textContent = msg
-        gestureToast.classList.add('show')
-        if (toastTimer) clearTimeout(toastTimer)
-        toastTimer = setTimeout(() => gestureToast.classList.remove('show'), 1800)
+      function whisper(text) {
+        gestureWhisper.textContent = text
       }
 
-      function renderCategoryRail() {
-        catButtonsContainer.innerHTML = ''
-        KIOSK_CATEGORIES.forEach((cat, idx) => {
+      function renderCategories() {
+        catNav.innerHTML = ''
+        CARVED_CATEGORIES.forEach((cat, idx) => {
           const btn = document.createElement('button')
-          btn.className = 'cat-tile' + (idx === activeCatIdx ? ' active' : '')
+          btn.className = 'cat-engraving carved-text' + (idx === activeCatIdx ? ' carved-active' : '')
           btn.setAttribute('data-air-target', 'true')
           btn.setAttribute('data-cat-idx', idx)
-          btn.innerHTML = `
-            <div class="cat-tile-left">
-              <span class="cat-icon">${cat.icon}</span>
-              <span class="cat-name">${cat.name}</span>
-            </div>
-            <span class="cat-count">${cat.items.length}</span>
-          `
-          btn.onclick = () => selectCategory(idx)
-          catButtonsContainer.appendChild(btn)
+          btn.textContent = cat.name
+          btn.onclick = () => {
+            activeCatIdx = idx
+            batchOffset = 0
+            closeMonumentAndSetup()
+            renderCategories()
+            renderCarvedBatch()
+            whisper(`EINGRAVIERT: ${cat.name}`)
+          }
+          catNav.appendChild(btn)
         })
       }
 
-      function selectCategory(idx) {
-        activeCatIdx = (idx + KIOSK_CATEGORIES.length) % KIOSK_CATEGORIES.length
-        currentPage = 0
-        renderCategoryRail()
-        renderDishesPage('next')
-        const cat = KIOSK_CATEGORIES[activeCatIdx]
-        showGestureToast(`${cat.icon} KATEGORIE: ${cat.name.toUpperCase()}`)
+      function closeMonumentAndSetup() {
+        monumentView.classList.remove('active')
+        setupView.classList.remove('active')
+        catNav.style.display = 'flex'
+        dishesWall.style.display = 'grid'
       }
 
-      function getPageCount() {
-        const items = KIOSK_CATEGORIES[activeCatIdx].items
-        return Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE))
-      }
+      function renderCarvedBatch() {
+        const cat = CARVED_CATEGORIES[activeCatIdx]
+        const items = cat.items
+        if (batchOffset >= items.length) batchOffset = 0
+        if (batchOffset < 0) batchOffset = Math.max(0, Math.floor((items.length - 1) / BATCH_SIZE) * BATCH_SIZE)
 
-      function renderDishesPage(direction = null) {
-        const cat = KIOSK_CATEGORIES[activeCatIdx]
-        const totalPages = getPageCount()
-        if (currentPage >= totalPages) currentPage = 0
-        if (currentPage < 0) currentPage = totalPages - 1
+        dishesWall.classList.add('sinking')
+        setTimeout(() => dishesWall.classList.remove('sinking'), 180)
 
-        activeCatHeading.textContent = `${cat.icon} ${cat.name.toUpperCase()}`
-        pageIndicator.textContent = `SEITE ${currentPage + 1} / ${totalPages}`
-
-        if (direction) {
-          dishesGrid.classList.add(direction === 'next' ? 'flip-anim-next' : 'flip-anim-prev')
-          setTimeout(() => {
-            dishesGrid.classList.remove('flip-anim-next', 'flip-anim-prev')
-          }, 220)
+        const slice = items.slice(batchOffset, batchOffset + BATCH_SIZE)
+        if (slice[0]) {
+          essenceImg.src = slice[0].photo
         }
 
-        const start = currentPage * ITEMS_PER_PAGE
-        const pageItems = cat.items.slice(start, start + ITEMS_PER_PAGE)
-
-        dishesGrid.innerHTML = ''
-        pageItems.forEach((dish) => {
+        dishesWall.innerHTML = ''
+        slice.forEach((dish) => {
           const priceStr =
             dish.preise.length > 1
-              ? `${fmtEuro(dish.preise[0])} / ${fmtEuro(dish.preise[1])}`
+              ? `${fmtEuro(dish.preise[0])} · ${fmtEuro(dish.preise[1])}`
               : fmtEuro(dish.preise[0])
 
-          const card = document.createElement('div')
-          card.className = 'kiosk-dish-card'
-          card.setAttribute('data-air-target', 'true')
-          card.setAttribute('data-dish-nr', dish.nr)
-          card.innerHTML = `
-            <div class="dish-img-wrap">
-              <img class="dish-img" src="${dish.photo}" alt="${dish.fullTitle}" loading="lazy" />
-              <span class="dish-nr-badge">Nr. ${dish.nr}</span>
-              ${dish.veg ? '<span class="dish-veg-badge">🌿 VEG</span>' : ''}
-            </div>
-            <div class="dish-card-body">
+          const row = document.createElement('div')
+          row.className = 'dish-engraving carved-text'
+          row.setAttribute('data-air-target', 'true')
+          row.setAttribute('data-dish-nr', dish.nr)
+          row.innerHTML = `
+            <div class="dish-Headline-line">
               <div>
-                <div class="dish-card-title">${dish.fullTitle}</div>
-                <div class="dish-card-desc">${dish.text || dish.katTitel + ' – frisch zubereitet'}</div>
+                <span class="dish-carved-nr">${dish.nr}</span>
+                <span class="dish-carved-name">${dish.fullTitle}</span>
               </div>
-              <div class="dish-card-footer">
-                <span class="dish-price-tag">${priceStr}</span>
-                <span class="dish-touch-cta">✋ AUSWÄHLEN</span>
-              </div>
+              <span class="dish-carved-price">${priceStr}</span>
+            </div>
+            <div class="dish-carved-lore">
+              ${dish.text || dish.katTitel + ' · frisch über Lavaglut zubereitet'}
             </div>
           `
-          card.onclick = () => openDishModal(dish)
-          dishesGrid.appendChild(card)
+          row.onmouseenter = () => {
+            essenceImg.src = dish.photo
+          }
+          row.onclick = () => openMonumentDish(dish)
+          dishesWall.appendChild(row)
         })
       }
 
-      function nextPage() {
-        const total = getPageCount()
-        if (total > 1) {
-          currentPage = (currentPage + 1) % total
-          renderDishesPage('next')
-          showGestureToast(`👋 UMBLÄTTERN → SEITE ${currentPage + 1} VON ${total}`)
-        } else {
-          selectCategory(activeCatIdx + 1)
+      function stepCarvedDishes(dir) {
+        if (monumentView.classList.contains('active') || setupView.classList.contains('active')) {
+          closeMonumentAndSetup()
         }
+        const items = CARVED_CATEGORIES[activeCatIdx].items
+        if (items.length > BATCH_SIZE) {
+          batchOffset += dir * BATCH_SIZE
+          if (batchOffset >= items.length) {
+            activeCatIdx = (activeCatIdx + 1) % CARVED_CATEGORIES.length
+            batchOffset = 0
+            renderCategories()
+          } else if (batchOffset < 0) {
+            activeCatIdx = (activeCatIdx - 1 + CARVED_CATEGORIES.length) % CARVED_CATEGORIES.length
+            const prevItems = CARVED_CATEGORIES[activeCatIdx].items
+            batchOffset = Math.max(0, Math.floor((prevItems.length - 1) / BATCH_SIZE) * BATCH_SIZE)
+            renderCategories()
+          }
+        } else {
+          activeCatIdx = (activeCatIdx + dir + CARVED_CATEGORIES.length) % CARVED_CATEGORIES.length
+          batchOffset = 0
+          renderCategories()
+        }
+        renderCarvedBatch()
       }
 
-      function prevPage() {
-        const total = getPageCount()
-        if (total > 1) {
-          currentPage = (currentPage - 1 + total) % total
-          renderDishesPage('prev')
-          showGestureToast(`👋 ZURÜCKBLÄTTERN → SEITE ${currentPage + 1} VON ${total}`)
-        } else {
-          selectCategory(activeCatIdx - 1)
-        }
-      }
+      document.getElementById('btn-next-carve').onclick = () => stepCarvedDishes(1)
+      document.getElementById('btn-prev-carve').onclick = () => stepCarvedDishes(-1)
 
-      document.getElementById('btn-next-page').onclick = nextPage
-      document.getElementById('btn-prev-page').onclick = prevPage
-      document.getElementById('btn-next-cat').onclick = () => selectCategory(activeCatIdx + 1)
-
-      /* -------------------------------------------------------------
-       * 3. DISH SPOTLIGHT MODAL & SCHAUFENSTER-MERKZETTEL
-       * ------------------------------------------------------------- */
-      const dishModal = document.getElementById('dish-modal')
-      const modalDishImg = document.getElementById('modal-dish-img')
-      const modalDishNr = document.getElementById('modal-dish-nr')
-      const modalDishTitle = document.getElementById('modal-dish-title')
-      const modalDishDesc = document.getElementById('modal-dish-desc')
-      const modalDishPrice = document.getElementById('modal-dish-price')
-      const modalSizeOptions = document.getElementById('modal-size-options')
-      let selectedSizeIdx = 0
-
-      function openDishModal(dish) {
-        activeModalDish = dish
+      /* =====================================================================
+       * 4. MONUMENTAL SINGLE-DISH ENGRAVING (ZERO MODAL BOXES)
+       * ===================================================================== */
+      function openMonumentDish(dish) {
+        activeMonumentDish = dish
         selectedSizeIdx = 0
-        modalDishImg.src = dish.photo
-        modalDishNr.textContent = `Nr. ${dish.nr}`
-        modalDishTitle.textContent = dish.fullTitle
-        modalDishDesc.textContent = dish.text || `${dish.katTitel} – frisch bei Lava Grill`
-        modalDishPrice.textContent = fmtEuro(dish.preise[0])
+        essenceImg.src = dish.photo
 
-        modalSizeOptions.innerHTML = ''
+        dishesWall.style.display = 'none'
+        catNav.style.display = 'none'
+        setupView.classList.remove('active')
+        monumentView.classList.add('active')
+
+        document.getElementById('monument-nr').textContent = `NR. ${dish.nr} · ${dish.katTitel.toUpperCase()}`
+        document.getElementById('monument-title').textContent = dish.fullTitle
+        document.getElementById('monument-desc').textContent =
+          dish.text || 'Frisch über 850°C Lavaglut & im Steinofen zubereitet'
+        document.getElementById('monument-price').textContent = fmtEuro(dish.preise[0])
+
+        const sizesRow = document.getElementById('monument-sizes')
+        sizesRow.innerHTML = ''
         if (dish.preise.length > 1) {
           dish.preise.forEach((p, idx) => {
-            const label = dish.groessen && dish.groessen[idx] ? dish.groessen[idx] : `Größe ${idx + 1}`
+            const lbl = dish.groessen && dish.groessen[idx] ? dish.groessen[idx] : `GRÖSSE ${idx + 1}`
             const b = document.createElement('button')
-            b.className = 'kiosk-btn' + (idx === 0 ? ' cam-btn active' : '')
+            b.className = 'monument-action-word carved-text' + (idx === 0 ? ' carved-active' : '')
             b.setAttribute('data-air-target', 'true')
-            b.textContent = `${label.toUpperCase()} · ${fmtEuro(p)}`
+            b.textContent = `${lbl.toUpperCase()} — ${fmtEuro(p)}`
             b.onclick = () => {
               selectedSizeIdx = idx
-              modalDishPrice.textContent = fmtEuro(p)
-              Array.from(modalSizeOptions.children).forEach((c, i) => {
-                c.className = 'kiosk-btn' + (i === idx ? ' cam-btn active' : '')
-              })
+              document.getElementById('monument-price').textContent = fmtEuro(p)
+              Array.from(sizesRow.children).forEach((c, i) =>
+                c.classList.toggle('carved-active', i === idx)
+              )
             }
-            modalSizeOptions.appendChild(b)
+            sizesRow.appendChild(b)
           })
         }
-
-        dishModal.classList.add('open')
-        showGestureToast(`🔍 DETAILS: NR. ${dish.nr} ${dish.fullTitle.toUpperCase()}`)
       }
 
-      function addActiveDishToTray() {
-        if (!activeModalDish) return
-        const price = activeModalDish.preise[selectedSizeIdx] || activeModalDish.preise[0]
-        selectedTray.push({
-          nr: activeModalDish.nr,
-          title: activeModalDish.fullTitle,
+      document.getElementById('btn-monument-back').onclick = () => {
+        closeMonumentAndSetup()
+      }
+
+      document.getElementById('btn-monument-remember').onclick = () => {
+        if (!activeMonumentDish) return
+        const price = activeMonumentDish.preise[selectedSizeIdx] || activeMonumentDish.preise[0]
+        rememberedList.push({
+          nr: activeMonumentDish.nr,
+          title: activeMonumentDish.fullTitle,
           price,
         })
-        renderTray()
-        dishModal.classList.remove('open')
-        showGestureToast(`✅ NR. ${activeModalDish.nr} AUF MERKZETTEL GESETZT!`)
+        renderRememberedLine()
+        closeMonumentAndSetup()
+        whisper(`NR. ${activeMonumentDish.nr} ${activeMonumentDish.fullTitle.toUpperCase()} IN MERKLISTE EINGRAVIERT`)
       }
 
-      function renderTray() {
-        const list = document.getElementById('tray-items-list')
-        const totalEl = document.getElementById('tray-total-price')
-        if (selectedTray.length === 0) {
-          list.innerHTML = `<span style="font-size: 12px; color: var(--text-muted)">Halte deine Hand 0,8s auf ein Gericht, um Details zu sehen oder Nummern für den Tresen zu merken!</span>`
-          totalEl.textContent = '0,00 €'
+      function renderRememberedLine() {
+        const trayWords = document.getElementById('tray-words')
+        const clearBtn = document.getElementById('btn-clear-tray')
+        if (rememberedList.length === 0) {
+          trayWords.textContent = 'KEINE — HALTE KURZ AUF EIN GERICHT ZUM EINGRAVIEREN'
+          clearBtn.style.display = 'none'
           return
         }
-        list.innerHTML = ''
         let sum = 0
-        selectedTray.forEach((item) => {
+        const parts = rememberedList.map((item) => {
           sum += Number(item.price)
-          const chip = document.createElement('span')
-          chip.className = 'tray-chip'
-          chip.textContent = `Nr. ${item.nr} ${item.title} (${fmtEuro(item.price)})`
-          list.appendChild(chip)
+          return `NR. ${item.nr} ${item.title.toUpperCase()}`
         })
-        totalEl.textContent = fmtEuro(sum)
+        trayWords.textContent = `${parts.join('  ·  ')}   (GESAMT ${fmtEuro(sum)})`
+        clearBtn.style.display = 'inline-block'
       }
 
-      document.getElementById('btn-modal-add').onclick = addActiveDishToTray
-      document.getElementById('btn-modal-close').onclick = () => dishModal.classList.remove('open')
       document.getElementById('btn-clear-tray').onclick = () => {
-        selectedTray.length = 0
-        renderTray()
-        showGestureToast('🗑️ SCHAUFENSTER-MERKZETTEL GELEERT')
+        rememberedList.length = 0
+        renderRememberedLine()
       }
 
-      renderCategoryRail()
-      renderDishesPage()
+      renderCategories()
+      renderCarvedBatch()
 
-      /* -------------------------------------------------------------
-       * 4. VIRTUAL "TocuH" 2.0 AIR-CURSOR & DWELL-CLICK ENGINE
-       * ------------------------------------------------------------- */
+      /* =====================================================================
+       * 5. DYNAMIC CHISEL BEVEL LIGHTING & AIR-CURSOR DWELL ENGINE
+       * ===================================================================== */
       const airCursor = document.getElementById('air-cursor')
       const dwellRing = document.getElementById('dwell-ring')
-      const airCursorIcon = document.getElementById('air-cursor-icon')
-      const parallaxStage = document.getElementById('parallax-stage')
-      const CIRCUMFERENCE = 182.2
+      const CIRCUMFERENCE = 175.9
 
       let cursorX = window.innerWidth * 0.5
-      let cursorY = window.innerHeight * 0.5
+      let cursorY = window.innerHeight * 0.48
       let targetCursorX = cursorX
       let targetCursorY = cursorY
 
       let hoveredTarget = null
       let hoverStartTime = 0
-      let dwellDurationMs = 850
+      let dwellDurationMs = 800
       let lastClickTime = 0
 
-      function triggerAirClick(el) {
+      function triggerCarvedClick(el) {
         if (!el) return
         const now = performance.now()
         if (now - lastClickTime < 650) return
         lastClickTime = now
 
         airCursor.classList.add('clicking')
-        airCursorIcon.textContent = '⚡'
-        setTimeout(() => {
-          airCursor.classList.remove('clicking')
-          airCursorIcon.textContent = '✋'
-        }, 320)
-
+        setTimeout(() => airCursor.classList.remove('clicking'), 320)
         el.click()
       }
 
-      function updateAirCursorAndDwell(now) {
-        // Smooth cursor interpolation
-        cursorX += (targetCursorX - cursorX) * 0.22
-        cursorY += (targetCursorY - cursorY) * 0.22
+      function updateChiselLightAndCursor(now) {
+        cursorX += (targetCursorX - cursorX) * 0.2
+        cursorY += (targetCursorY - cursorY) * 0.2
 
         airCursor.style.transform = `translate3d(${cursorX - window.innerWidth * 0.5}px, ${cursorY - window.innerHeight * 0.5}px, 0)`
 
-        // Subtle 3D Motion Parallax on the Kiosk Stage based on Viewer/Hand Position
-        const normX = (cursorX / window.innerWidth - 0.5) * 2 // -1 .. +1
-        const normY = (cursorY / window.innerHeight - 0.5) * 2 // -1 .. +1
-        parallaxStage.style.transform = `rotateY(${normX * 3.2}deg) rotateX(${-normY * 2.2}deg)`
+        // Compute normalized viewer/light position (-1 .. +1)
+        const normX = (cursorX / window.innerWidth - 0.5) * 2
+        const normY = (cursorY / window.innerHeight - 0.5) * 2
 
-        // Hit-test element under Air-Cursor
+        // Update CSS Chisel Shadow Bevel variables so every carved letter reacts to the light angle!
+        const lx = (-normX * 3.2).toFixed(2) + 'px'
+        const ly = (2.4 - normY * 2.2).toFixed(2) + 'px'
+        const negLx = (normX * 2.6).toFixed(2) + 'px'
+        const negLy = (-2.0 + normY * 1.8).toFixed(2) + 'px'
+
+        const rootStyle = document.documentElement.style
+        rootStyle.setProperty('--lx', lx)
+        rootStyle.setProperty('--ly', ly)
+        rootStyle.setProperty('--neg-lx', negLx)
+        rootStyle.setProperty('--neg-ly', negLy)
+        rootStyle.setProperty('--spot-x', `${((cursorX / window.innerWidth) * 100).toFixed(1)}%`)
+        rootStyle.setProperty('--spot-y', `${((cursorY / window.innerHeight) * 100).toFixed(1)}%`)
+
+        // Hit-test carved words under the Ember Light Cursor
         const hitEl = document.elementFromPoint(cursorX, cursorY)
         const airTarget = hitEl ? hitEl.closest('[data-air-target]') : null
 
@@ -1595,62 +1292,63 @@
           if (hoveredTarget) hoveredTarget.classList.remove('air-hover')
           hoveredTarget = airTarget
           hoverStartTime = now
-          if (hoveredTarget) hoveredTarget.classList.add('air-hover')
+          if (hoveredTarget) {
+            hoveredTarget.classList.add('air-hover')
+            // If hovering over a dish engraving, smoothly blend its essence into the stone surface
+            const dishNr = hoveredTarget.getAttribute('data-dish-nr')
+            if (dishNr) {
+              const found = allDishes.find((d) => String(d.nr) === String(dishNr))
+              if (found) essenceImg.src = found.photo
+            }
+          }
         }
 
-        if (hoveredTarget && !isAutoDemoActive && now - lastClickTime > 750) {
+        if (hoveredTarget && !isAutoDriftActive && now - lastClickTime > 700) {
           const elapsed = now - hoverStartTime
           const progress = Math.min(1, elapsed / dwellDurationMs)
           dwellRing.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - progress))
 
           if (progress >= 1) {
-            hoverStartTime = now + 900
+            hoverStartTime = now + 850
             dwellRing.style.strokeDashoffset = String(CIRCUMFERENCE)
-            triggerAirClick(hoveredTarget)
+            triggerCarvedClick(hoveredTarget)
           }
         } else {
           dwellRing.style.strokeDashoffset = String(CIRCUMFERENCE)
         }
+
+        drawLivingSurface(now, normX, normY)
       }
 
-      // Mouse / Touch support for testing on PC or Monitor
       window.addEventListener('pointermove', (e) => {
-        if (!isLiveCamActive) {
-          isAutoDemoActive = false
-          document.getElementById('btn-toggle-demo').classList.remove('active')
-        }
+        if (!isLiveCamActive) isAutoDriftActive = false
         targetCursorX = e.clientX
         targetCursorY = e.clientY
       })
 
-      // Keyboard shortcuts (ArrowLeft / ArrowRight for page flip)
       window.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowRight') nextPage()
-        if (e.key === 'ArrowLeft') prevPage()
-        if (e.key === 'ArrowDown') selectCategory(activeCatIdx + 1)
-        if (e.key === 'ArrowUp') selectCategory(activeCatIdx - 1)
+        if (e.key === 'ArrowRight') stepCarvedDishes(1)
+        if (e.key === 'ArrowLeft') stepCarvedDishes(-1)
       })
 
-      /* -------------------------------------------------------------
-       * 5. LIVE CAMERA ENGINE (HYBRID MEDIAPIPE HANDS + 60 FPS OPTICAL FLOW)
-       * ------------------------------------------------------------- */
+      /* =====================================================================
+       * 6. LIVE CAMERA TRACKER (MEDIAPIPE HANDS + 60 FPS OPTICAL FLOW)
+       * ===================================================================== */
       let isLiveCamActive = false
-      let isAutoDemoActive = true
+      let isAutoDriftActive = true
       let isMirrored = true
-      let selectedDeviceId = ''
+      let videoDevicesList = []
+      let currentCamIdx = 0
       let mediaStream = null
       let mpHands = null
       let lastMpResultTime = 0
+      let lastMpSolveAttempt = 0
 
       const camVideo = document.getElementById('cam-video')
       const camCanvas = document.getElementById('cam-overlay-canvas')
       const camCtx = camCanvas.getContext('2d')
       const btnToggleCam = document.getElementById('btn-toggle-cam')
-      const btnToggleDemo = document.getElementById('btn-toggle-demo')
-      const camDockStatus = document.getElementById('cam-dock-status')
-      const trackingModeReadout = document.getElementById('tracking-mode-Readout')
 
-      // Offscreen 80x60 motion & optical-flow buffer
       const mW = 80
       const mH = 60
       const mCvs = document.createElement('canvas')
@@ -1661,29 +1359,16 @@
       let prevCentroidX = null
       let swipeCooldownUntil = 0
 
-      async function populateCameraList() {
+      async function refreshCameraDevices() {
         try {
-          const devices = await navigator.mediaDevices.enumerateDevices()
-          const videoDevices = devices.filter((d) => d.kind === 'videoinput')
-          const select = document.getElementById('camera-select')
-          if (videoDevices.length === 0) return
-          select.innerHTML = ''
-          videoDevices.forEach((d, idx) => {
-            const opt = document.createElement('option')
-            opt.value = d.deviceId
-            opt.textContent = d.label || `Kamera ${idx + 1} (USB / Webcam)`
-            select.appendChild(opt)
-          })
-        } catch (err) {
-          // Ignore if permission not yet granted
-        }
+          const devs = await navigator.mediaDevices.enumerateDevices()
+          videoDevicesList = devs.filter((d) => d.kind === 'videoinput')
+        } catch (e) {}
       }
 
       async function startLiveCamera(deviceId = '') {
         try {
-          if (mediaStream) {
-            mediaStream.getTracks().forEach((t) => t.stop())
-          }
+          if (mediaStream) mediaStream.getTracks().forEach((t) => t.stop())
           const constraints = {
             video: deviceId
               ? { deviceId: { exact: deviceId }, width: { ideal: 640 }, height: { ideal: 480 } }
@@ -1695,20 +1380,16 @@
           await camVideo.play()
 
           isLiveCamActive = true
-          isAutoDemoActive = false
+          isAutoDriftActive = false
           prevFrame = null
-          btnToggleCam.classList.add('active')
-          btnToggleCam.textContent = '🟢 Live-Kamera Aktiv'
-          btnToggleDemo.classList.remove('active')
-          camDockStatus.textContent = '🟢 LIVE-KAMERA TRACKING'
-          trackingModeReadout.textContent =
-            '📹 KAMERA AKTIV · BEWEGE DEINE HAND VOR DEM MONITOR ZUM STEUERN & BLÄTTERN!'
-          showGestureToast('📹 LIVE-KAMERA AKTIVIERT · HALTE DEINE HAND INS BILD!')
+          btnToggleCam.classList.add('active-sys')
+          btnToggleCam.textContent = 'KAMERA AKTIV'
+          whisper('KAMERA AKTIV · BEWEGE DEINE HAND VOR DEM MONITOR ZUM AUSLEUCHTEN & WÄHLEN')
 
-          await populateCameraList()
+          await refreshCameraDevices()
           initMediaPipeHandsIfAvailable()
         } catch (err) {
-          showGestureToast('⚠️ KAMERA-ZUGRIFF BLOCKIERT ODER KEINE KAMERA GEFUNDEN')
+          whisper('KAMERA-ZUGRIFF NICHT MÖGLICH ODER KEINE KAMERA GEFUNDEN')
         }
       }
 
@@ -1718,9 +1399,8 @@
           mediaStream = null
         }
         isLiveCamActive = false
-        btnToggleCam.classList.remove('active')
-        btnToggleCam.textContent = '📹 Kamera starten (Live)'
-        camDockStatus.textContent = '📡 SENSOR: AUTO-SIMULATION'
+        btnToggleCam.classList.remove('active-sys')
+        btnToggleCam.textContent = 'KAMERA STARTEN'
       }
 
       function initMediaPipeHandsIfAvailable() {
@@ -1739,58 +1419,32 @@
             if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) return
             lastMpResultTime = performance.now()
             const lm = results.multiHandLandmarks[0]
-            // Index Finger Tip (#8) and Thumb Tip (#4)
             const indexTip = lm[8]
             const thumbTip = lm[4]
             const rawX = isMirrored ? 1 - indexTip.x : indexTip.x
             const rawY = indexTip.y
 
-            // Map active camera region [0.12..0.88] to full monitor width/height
             const mappedX = Math.max(0, Math.min(1, (rawX - 0.12) / 0.76))
             const mappedY = Math.max(0, Math.min(1, (rawY - 0.12) / 0.76))
             targetCursorX = mappedX * window.innerWidth
             targetCursorY = mappedY * window.innerHeight
 
-            // Pinch Detection (Thumb #4 + Index #8 close together)
             const pinchDist = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y)
             if (pinchDist < 0.048 && hoveredTarget) {
-              triggerAirClick(hoveredTarget)
+              triggerCarvedClick(hoveredTarget)
             }
-
-            // Draw 21-point Hand Skeleton on camera radar dock
-            drawHandLandmarksOnDock(lm)
           })
-        } catch (e) {
-          // Optical-Flow engine handles everything seamlessly if CDN is offline
-        }
-      }
-
-      function drawHandLandmarksOnDock(lm) {
-        const w = camCanvas.width
-        const h = camCanvas.height
-        camCtx.clearRect(0, 0, w, h)
-        camCtx.strokeStyle = '#00f0ff'
-        camCtx.lineWidth = 2
-        lm.forEach((pt, idx) => {
-          const px = (isMirrored ? 1 - pt.x : pt.x) * w
-          const py = pt.y * h
-          camCtx.fillStyle = idx === 8 ? '#ffaa00' : '#00f0ff'
-          camCtx.beginPath()
-          camCtx.arc(px, py, idx === 8 ? 5 : 2.5, 0, Math.PI * 2)
-          camCtx.fill()
-        })
+        } catch (e) {}
       }
 
       function processOpticalFlowFrame(now) {
         if (!isLiveCamActive || camVideo.readyState < 2) return
 
-        // Send frame to MediaPipe Hands if loaded (throttled to ~20fps so main thread stays 60fps)
         if (mpHands && now - lastMpSolveAttempt > 55) {
           lastMpSolveAttempt = now
           mpHands.send({ image: camVideo }).catch(() => {})
         }
 
-        // If MediaPipe Hands locked onto a hand in the last 250ms, skip optical-flow override
         if (now - lastMpResultTime < 250) return
 
         mCtx.save()
@@ -1813,7 +1467,7 @@
         camCtx.clearRect(0, 0, w, h)
 
         if (prevFrame) {
-          camCtx.fillStyle = 'rgba(0, 240, 255, 0.55)'
+          camCtx.fillStyle = 'rgba(255, 160, 40, 0.65)'
           for (let y = 2; y < mH - 2; y += 2) {
             for (let x = 2; x < mW - 2; x += 2) {
               const i = (y * mW + x) * 4
@@ -1824,133 +1478,92 @@
 
               if (diff > 48) {
                 motionCount++
-                const weight = diff
-                sumX += x * weight
-                sumY += y * weight
-                totalWeight += weight
-
-                // Draw motion pixel on radar preview
-                camCtx.fillRect((x / mW) * w, (y / mH) * h, 3, 3)
+                sumX += x * diff
+                sumY += y * diff
+                totalWeight += diff
+                camCtx.fillRect((x / mW) * w, (y / mH) * h, 2.5, 2.5)
               }
             }
           }
         }
-
         prevFrame = new Uint8ClampedArray(data)
 
         if (motionCount > 8 && totalWeight > 0) {
-          const cx = sumX / totalWeight / mW // 0..1
-          const cy = sumY / totalWeight / mH // 0..1
+          const cx = sumX / totalWeight / mW
+          const cy = sumY / totalWeight / mH
 
-          // Check for rapid horizontal Air-Swipe Wave Gesture
-          if (prevCentroidX !== null && now > swipeCooldownUntil && motionCount > 24) {
+          if (prevCentroidX !== null && now > swipeCooldownUntil && motionCount > 22) {
             const vx = cx - prevCentroidX
-            if (vx > 0.22) {
-              swipeCooldownUntil = now + 1150
-              nextPage()
-            } else if (vx < -0.22) {
-              swipeCooldownUntil = now + 1150
-              prevPage()
+            if (vx > 0.2) {
+              swipeCooldownUntil = now + 950
+              stepCarvedDishes(1)
+            } else if (vx < -0.2) {
+              swipeCooldownUntil = now + 950
+              stepCarvedDishes(-1)
             }
           }
           prevCentroidX = cx
 
-          // Guide Air-Cursor to the moving hand/arm centroid
           const mappedX = Math.max(0, Math.min(1, (cx - 0.1) / 0.8))
           const mappedY = Math.max(0, Math.min(1, (cy - 0.1) / 0.8))
           targetCursorX = mappedX * window.innerWidth
           targetCursorY = mappedY * window.innerHeight
-
-          // Draw target crosshair on radar dock
-          const rx = cx * w
-          const ry = cy * h
-          camCtx.strokeStyle = '#ffaa00'
-          camCtx.lineWidth = 2
-          camCtx.beginPath()
-          camCtx.arc(rx, ry, 10, 0, Math.PI * 2)
-          camCtx.stroke()
-        }
-      }
-      let lastMpSolveAttempt = 0
-
-      /* -------------------------------------------------------------
-       * 6. AUTO-PASSANT DEMO MODE (SIMULATES HAND BROWSING & PAGE FLIPPING)
-       * ------------------------------------------------------------- */
-      let demoLastFlipAt = 0
-
-      function updateAutoDemoHand(now) {
-        if (!isAutoDemoActive || isLiveCamActive) return
-
-        // Smooth figure-8 browsing glide across the Kiosk screen
-        const t = now * 0.00065
-        targetCursorX = window.innerWidth * (0.54 + Math.sin(t) * 0.24)
-        targetCursorY = window.innerHeight * (0.52 + Math.sin(t * 1.7) * 0.2)
-
-        // Draw simulated radar dot on dock canvas
-        const w = camCanvas.width
-        const h = camCanvas.height
-        camCtx.clearRect(0, 0, w, h)
-        const rx = (cursorX / window.innerWidth) * w
-        const ry = (cursorY / window.innerHeight) * h
-        camCtx.strokeStyle = '#00f0ff'
-        camCtx.lineWidth = 2
-        camCtx.beginPath()
-        camCtx.arc(rx, ry, 9, 0, Math.PI * 2)
-        camCtx.stroke()
-
-        // Periodically flip page in Auto-Passant Demo every 6.5s
-        if (now - demoLastFlipAt > 6500 && !dishModal.classList.contains('open') && !setupModal.classList.contains('open')) {
-          demoLastFlipAt = now
-          nextPage()
         }
       }
 
-      /* -------------------------------------------------------------
-       * 7. UI BUTTON BINDINGS & SETUP MODAL
-       * ------------------------------------------------------------- */
+      /* =====================================================================
+       * 7. CARVED SYSTEM RUNES & CALIBRATION CONTROLS
+       * ===================================================================== */
       btnToggleCam.onclick = () => {
-        if (isLiveCamActive) {
-          stopLiveCamera()
-        } else {
-          startLiveCamera(selectedDeviceId)
-        }
-      }
-
-      btnToggleDemo.onclick = () => {
         if (isLiveCamActive) stopLiveCamera()
-        isAutoDemoActive = !isAutoDemoActive
-        btnToggleDemo.classList.toggle('active', isAutoDemoActive)
-        if (isAutoDemoActive) {
-          showGestureToast('🤖 AUTO-PASSANT DEMO AKTIV')
+        else startLiveCamera()
+      }
+
+      const btnSurfaceMat = document.getElementById('btn-surface-mat')
+      btnSurfaceMat.onclick = () => {
+        currentThemeIdx = (currentThemeIdx + 1) % SURFACE_THEMES.length
+        generateStoneGrain()
+        btnSurfaceMat.textContent = `OBERFLÄCHE: ${SURFACE_THEMES[currentThemeIdx].name}`
+      }
+
+      document.getElementById('btn-open-setup').onclick = async () => {
+        await refreshCameraDevices()
+        dishesWall.style.display = 'none'
+        catNav.style.display = 'none'
+        monumentView.classList.remove('active')
+        setupView.classList.add('active')
+      }
+
+      document.getElementById('btn-setup-done').onclick = () => {
+        closeMonumentAndSetup()
+      }
+
+      document.getElementById('btn-setup-cam-cycle').onclick = async (e) => {
+        await refreshCameraDevices()
+        if (videoDevicesList.length > 0) {
+          currentCamIdx = (currentCamIdx + 1) % videoDevicesList.length
+          const dev = videoDevicesList[currentCamIdx]
+          e.target.textContent = `KAMERA: ${(dev.label || 'SENSOR ' + (currentCamIdx + 1)).toUpperCase()}`
+          startLiveCamera(dev.deviceId)
+        } else {
+          startLiveCamera()
         }
       }
 
-      const setupModal = document.getElementById('setup-modal')
-      document.getElementById('btn-open-setup').onclick = () => {
-        populateCameraList()
-        setupModal.classList.add('open')
-      }
-      document.getElementById('btn-setup-close').onclick = () => setupModal.classList.remove('open')
-      document.getElementById('btn-setup-start-cam').onclick = () => {
-        setupModal.classList.remove('open')
-        startLiveCamera(selectedDeviceId)
-      }
-
-      document.getElementById('camera-select').onchange = (e) => {
-        selectedDeviceId = e.target.value
-        if (isLiveCamActive) startLiveCamera(selectedDeviceId)
-      }
-
-      const btnToggleMirror = document.getElementById('btn-toggle-mirror')
-      btnToggleMirror.onclick = () => {
+      document.getElementById('btn-setup-mirror').onclick = (e) => {
         isMirrored = !isMirrored
         camVideo.classList.toggle('mirrored', isMirrored)
-        btnToggleMirror.textContent = `Spiegelung: ${isMirrored ? 'AN' : 'AUS'}`
-        btnToggleMirror.classList.toggle('active', isMirrored)
+        e.target.textContent = isMirrored
+          ? 'SPIEGELUNG: AN (VOR MONITOR)'
+          : 'SPIEGELUNG: AUS (HINTER MIR)'
       }
 
-      document.getElementById('dwell-select').onchange = (e) => {
-        dwellDurationMs = Number(e.target.value)
+      const dwellChoices = [600, 800, 1100]
+      let dwellIdx = 1
+      document.getElementById('btn-setup-dwell').onclick = (e) => {
+        dwellIdx = (dwellIdx + 1) % dwellChoices.length
+        dwellDurationMs = dwellChoices[dwellIdx]
+        e.target.textContent = `HALTEZEIT: ${(dwellDurationMs / 1000).toFixed(1).replace('.', ',')} SEKUNDEN`
       }
 
       document.getElementById('link-parallax-v6').onclick = (e) => {
@@ -1971,20 +1584,24 @@
         }
       }
 
-      /* -------------------------------------------------------------
-       * 8. MAIN 60 FPS LOOP
-       * ------------------------------------------------------------- */
-      function loop(now) {
-        requestAnimationFrame(loop)
+      /* =====================================================================
+       * 8. MAIN 60 FPS ANIMATION LOOP
+       * ===================================================================== */
+      function animate(now) {
+        requestAnimationFrame(animate)
+
         if (isLiveCamActive) {
           processOpticalFlowFrame(now)
-        } else if (isAutoDemoActive) {
-          updateAutoDemoHand(now)
+        } else if (isAutoDriftActive) {
+          const t = now * 0.00055
+          targetCursorX = window.innerWidth * (0.5 + Math.sin(t) * 0.25)
+          targetCursorY = window.innerHeight * (0.48 + Math.cos(t * 1.4) * 0.18)
         }
-        updateAirCursorAndDwell(now)
+
+        updateChiselLightAndCursor(now)
       }
 
-      requestAnimationFrame(loop)
+      requestAnimationFrame(animate)
     </script>
   </body>
 </html>
