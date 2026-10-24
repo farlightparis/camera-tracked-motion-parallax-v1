@@ -1,0 +1,1990 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>"TocuH" 2.0 V1 · Lava Grill Schaufenster-Kiosk hinter Glas</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Orbitron:wght@600;800;900&family=Plus+Jakarta+Sans:wght@500;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Optional MediaPipe Hands CDN (progressive enhancement on top of built-in 60 FPS Optical-Flow Vision Engine) -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"
+      crossorigin="anonymous"
+      defer
+    ></script>
+    <style>
+      :root {
+        --bg-void: #03060c;
+        --bg-panel: rgba(10, 17, 30, 0.88);
+        --bg-card: rgba(15, 25, 42, 0.92);
+        --holo-cyan: #00f0ff;
+        --holo-amber: #ffaa00;
+        --holo-lava: #ff4500;
+        --holo-emerald: #10b981;
+        --holo-magenta: #ff007f;
+        --text-bright: #ffffff;
+        --text-muted: #94a3b8;
+        --font-sci: 'Orbitron', sans-serif;
+        --font-sans: 'Plus Jakarta Sans', sans-serif;
+        --font-mono: 'JetBrains Mono', monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: radial-gradient(circle at 50% 25%, #0c1628 0%, #03060c 78%);
+        color: var(--text-bright);
+        font-family: var(--font-sans);
+      }
+
+      /* Shop-Window Glass Reflection Overlay */
+      .window-glass-sheen {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 90;
+        background: linear-gradient(
+          125deg,
+          rgba(255, 255, 255, 0.04) 0%,
+          rgba(0, 240, 255, 0.015) 28%,
+          transparent 45%,
+          transparent 72%,
+          rgba(255, 170, 0, 0.025) 100%
+        );
+        border: 2px solid rgba(0, 240, 255, 0.22);
+        box-shadow: inset 0 0 60px rgba(0, 240, 255, 0.08);
+      }
+
+      /* Overall Kiosk Shell with Subtle 3D Motion Parallax */
+      .kiosk-viewport {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding: 12px 16px;
+        gap: 10px;
+        perspective: 1500px;
+        z-index: 10;
+      }
+
+      .kiosk-parallax-stage {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        transform-style: preserve-3d;
+        transition: transform 0.08s ease-out;
+      }
+
+      /* 1. TOP KIOSK HEADER BAR */
+      .kiosk-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        background: rgba(7, 13, 24, 0.92);
+        border: 1.5px solid rgba(0, 240, 255, 0.35);
+        border-radius: 18px;
+        padding: 10px 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65), 0 0 22px rgba(0, 240, 255, 0.12);
+        flex-wrap: wrap;
+      }
+
+      .brand-cluster {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .tocuh-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, rgba(255, 69, 0, 0.25), rgba(255, 170, 0, 0.2));
+        border: 1.5px solid var(--holo-amber);
+        padding: 6px 14px;
+        border-radius: 12px;
+        box-shadow: 0 0 16px rgba(255, 170, 0, 0.3);
+      }
+
+      .tocuh-dot {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: var(--holo-emerald);
+        box-shadow: 0 0 12px var(--holo-emerald);
+        animation: pulseGlow 1.5s infinite;
+      }
+
+      @keyframes pulseGlow {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.28);
+          opacity: 0.65;
+        }
+      }
+
+      .tocuh-title {
+        font-family: var(--font-sci);
+        font-size: clamp(15px, 1.8vw, 21px);
+        font-weight: 900;
+        letter-spacing: 0.06em;
+        color: #fff;
+      }
+
+      .tocuh-sub {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--holo-cyan);
+        letter-spacing: 0.05em;
+      }
+
+      /* Live Gesture Guide Pill */
+      .gesture-status-bar {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: rgba(0, 240, 255, 0.08);
+        border: 1px solid rgba(0, 240, 255, 0.3);
+        padding: 7px 14px;
+        border-radius: 999px;
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        color: #e2e8f0;
+      }
+
+      .gesture-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .gesture-chip strong {
+        color: var(--holo-amber);
+      }
+
+      /* Top Right Controls */
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .kiosk-btn {
+        appearance: none;
+        border: 1.5px solid rgba(255, 255, 255, 0.2);
+        background: rgba(15, 23, 42, 0.9);
+        color: #f8fafc;
+        font-family: var(--font-sci);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        padding: 9px 13px;
+        border-radius: 12px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+        text-decoration: none;
+      }
+
+      .kiosk-btn.cam-btn {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.28), rgba(4, 120, 87, 0.45));
+        border-color: var(--holo-emerald);
+        color: #a7f3d0;
+        box-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
+      }
+
+      .kiosk-btn.cam-btn.active {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: #022c22;
+        box-shadow: 0 0 24px rgba(16, 185, 129, 0.65);
+      }
+
+      .kiosk-btn.demo-btn.active {
+        background: rgba(0, 240, 255, 0.22);
+        border-color: var(--holo-cyan);
+        color: #fff;
+        box-shadow: 0 0 16px rgba(0, 240, 255, 0.35);
+      }
+
+      .kiosk-btn.link-v6 {
+        background: linear-gradient(135deg, rgba(255, 69, 0, 0.22), rgba(255, 170, 0, 0.18));
+        border-color: rgba(255, 170, 0, 0.55);
+        color: #fde68a;
+      }
+
+      /* 2. MAIN KIOSK BODY (LEFT CATEGORY RAIL + CENTER DISH GRID + SIDE AIR-FLIPPERS) */
+      .kiosk-main {
+        flex: 1;
+        min-height: 0;
+        display: grid;
+        grid-template-columns: 235px 1fr;
+        gap: 12px;
+      }
+
+      /* Left Fast-Food Category Rail */
+      .cat-rail {
+        background: var(--bg-panel);
+        border: 1.5px solid rgba(0, 240, 255, 0.25);
+        border-radius: 18px;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        overflow-y: auto;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      }
+
+      .cat-rail-header {
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--holo-cyan);
+        padding: 2px 6px 4px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .cat-tile {
+        appearance: none;
+        width: 100%;
+        border: 1.5px solid rgba(255, 255, 255, 0.1);
+        background: rgba(20, 32, 54, 0.78);
+        color: #e2e8f0;
+        border-radius: 14px;
+        padding: 10px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.18s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .cat-tile-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .cat-icon {
+        font-size: 22px;
+        line-height: 1;
+      }
+
+      .cat-name {
+        font-family: var(--font-sans);
+        font-size: 13.5px;
+        font-weight: 800;
+        color: #fff;
+        line-height: 1.15;
+      }
+
+      .cat-count {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--holo-amber);
+        background: rgba(255, 170, 0, 0.14);
+        border: 1px solid rgba(255, 170, 0, 0.35);
+        padding: 2px 7px;
+        border-radius: 999px;
+      }
+
+      .cat-tile.active {
+        background: linear-gradient(135deg, rgba(255, 69, 0, 0.34), rgba(255, 170, 0, 0.22));
+        border-color: var(--holo-amber);
+        box-shadow: 0 0 20px rgba(255, 140, 0, 0.35);
+        transform: translateX(3px);
+      }
+
+      /* Air-Target Hover Lock-On Highlight */
+      [data-air-target].air-hover {
+        border-color: var(--holo-cyan) !important;
+        box-shadow: 0 0 28px rgba(0, 240, 255, 0.75), inset 0 0 18px rgba(0, 240, 255, 0.25) !important;
+        transform: scale(1.02);
+      }
+
+      /* Right Stage: Giant Air-Flipper Left + Center Cards + Giant Air-Flipper Right */
+      .stage-wrapper {
+        display: grid;
+        grid-template-columns: 78px 1fr 78px;
+        gap: 10px;
+        min-height: 0;
+      }
+
+      .air-flipper-col {
+        appearance: none;
+        border: 2px solid rgba(0, 240, 255, 0.32);
+        background: linear-gradient(180deg, rgba(8, 22, 42, 0.9), rgba(14, 34, 62, 0.9));
+        border-radius: 18px;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        cursor: pointer;
+        padding: 10px 6px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        transition: all 0.2s ease;
+        position: relative;
+      }
+
+      .air-flipper-col.next-col {
+        border-color: rgba(255, 170, 0, 0.45);
+        background: linear-gradient(180deg, rgba(40, 22, 10, 0.9), rgba(22, 14, 8, 0.92));
+      }
+
+      .flipper-arrow {
+        font-size: 32px;
+        font-weight: 900;
+        color: var(--holo-cyan);
+        text-shadow: 0 0 16px var(--holo-cyan);
+      }
+
+      .air-flipper-col.next-col .flipper-arrow {
+        color: var(--holo-amber);
+        text-shadow: 0 0 16px var(--holo-amber);
+      }
+
+      .flipper-label {
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        transform: rotate(180deg);
+        font-family: var(--font-sci);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        color: #e2e8f0;
+      }
+
+      .flipper-sub {
+        font-family: var(--font-mono);
+        font-size: 9.5px;
+        color: var(--holo-amber);
+        text-align: center;
+      }
+
+      /* Center Dish Page Container */
+      .menu-stage-center {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-height: 0;
+      }
+
+      .stage-top-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(10, 18, 32, 0.9);
+        border: 1.5px solid rgba(255, 255, 255, 0.12);
+        border-radius: 14px;
+        padding: 8px 16px;
+      }
+
+      .stage-cat-title {
+        font-family: var(--font-sci);
+        font-size: clamp(16px, 2vw, 22px);
+        font-weight: 900;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .stage-page-pill {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--holo-amber);
+        background: rgba(255, 170, 0, 0.15);
+        border: 1.5px solid var(--holo-amber);
+        padding: 5px 14px;
+        border-radius: 999px;
+      }
+
+      /* 3x2 Fast-Food Kiosk Dish Cards Grid */
+      .dishes-grid {
+        flex: 1;
+        min-height: 0;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(2, 1fr);
+        gap: 12px;
+        transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.28s ease;
+      }
+
+      .dishes-grid.flip-anim-next {
+        transform: translateX(-28px) rotateY(-6deg);
+        opacity: 0.35;
+      }
+
+      .dishes-grid.flip-anim-prev {
+        transform: translateX(28px) rotateY(6deg);
+        opacity: 0.35;
+      }
+
+      .kiosk-dish-card {
+        background: var(--bg-card);
+        border: 2px solid rgba(255, 255, 255, 0.13);
+        border-radius: 18px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        cursor: pointer;
+        position: relative;
+        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.55);
+        transition: all 0.18s ease;
+      }
+
+      .dish-img-wrap {
+        position: relative;
+        height: 46%;
+        min-height: 92px;
+        overflow: hidden;
+        background: #050a14;
+      }
+
+      .dish-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: saturate(1.38) contrast(1.14);
+        transition: transform 0.35s ease;
+      }
+
+      .kiosk-dish-card.air-hover .dish-img {
+        transform: scale(1.07);
+      }
+
+      .dish-nr-badge {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        background: rgba(3, 7, 15, 0.92);
+        border: 1.5px solid var(--holo-amber);
+        color: var(--holo-amber);
+        font-family: var(--font-sci);
+        font-size: 13px;
+        font-weight: 900;
+        padding: 4px 10px;
+        border-radius: 9px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+      }
+
+      .dish-veg-badge {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: rgba(6, 78, 59, 0.92);
+        border: 1px solid #34d399;
+        color: #a7f3d0;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 800;
+        padding: 3px 8px;
+        border-radius: 999px;
+      }
+
+      .dish-card-body {
+        flex: 1;
+        padding: 10px 13px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 6px;
+      }
+
+      .dish-card-title {
+        font-family: var(--font-sans);
+        font-size: clamp(14px, 1.35vw, 18px);
+        font-weight: 800;
+        color: #ffffff;
+        line-height: 1.2;
+      }
+
+      .dish-card-desc {
+        font-size: 12px;
+        color: #cbd5e1;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .dish-card-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding-top: 4px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .dish-price-tag {
+        font-family: var(--font-sci);
+        font-size: clamp(13.5px, 1.25vw, 17.5px);
+        font-weight: 900;
+        color: var(--holo-amber);
+        text-shadow: 0 0 12px rgba(255, 170, 0, 0.35);
+        white-space: nowrap;
+      }
+
+      .dish-touch-cta {
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        font-weight: 800;
+        color: #031525;
+        background: linear-gradient(135deg, var(--holo-cyan), #38bdf8);
+        padding: 5px 10px;
+        border-radius: 8px;
+        letter-spacing: 0.03em;
+      }
+
+      /* 3. BOTTOM WINDOW-TRAY / ORDER MERKZETTEL BAR */
+      .kiosk-bottom-tray {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        background: rgba(7, 13, 24, 0.94);
+        border: 1.5px solid rgba(255, 170, 0, 0.4);
+        border-radius: 16px;
+        padding: 9px 16px;
+        box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.6);
+      }
+
+      .tray-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        overflow-x: auto;
+        flex: 1;
+      }
+
+      .tray-label {
+        font-family: var(--font-sci);
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--holo-amber);
+        white-space: nowrap;
+      }
+
+      .tray-items-list {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        overflow-x: auto;
+      }
+
+      .tray-chip {
+        background: rgba(255, 170, 0, 0.15);
+        border: 1px solid rgba(255, 170, 0, 0.45);
+        color: #fff;
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 999px;
+        white-space: nowrap;
+      }
+
+      .tray-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
+      }
+
+      .tray-total {
+        font-family: var(--font-sci);
+        font-size: 16px;
+        font-weight: 900;
+        color: #fff;
+      }
+
+      .tray-total span {
+        color: var(--holo-amber);
+      }
+
+      /* 4. LIVE CAMERA SENSOR HUD (DOCKED IN SIDEBAR) */
+      .cam-sensor-dock {
+        margin-top: auto;
+        width: 100%;
+        background: rgba(5, 10, 20, 0.96);
+        border: 1.5px solid var(--holo-cyan);
+        border-radius: 14px;
+        padding: 7px;
+        box-shadow: 0 0 18px rgba(0, 240, 255, 0.2);
+      }
+
+      .cam-dock-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-family: var(--font-mono);
+        font-size: 9.5px;
+        font-weight: 800;
+        color: var(--holo-cyan);
+        margin-bottom: 5px;
+      }
+
+      .cam-preview-box {
+        position: relative;
+        width: 100%;
+        height: 92px;
+        background: #02050a;
+        border-radius: 9px;
+        overflow: hidden;
+        border: 1px solid rgba(0, 240, 255, 0.3);
+      }
+
+      #cam-video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0.45;
+      }
+
+      #cam-video.mirrored {
+        transform: scaleX(-1);
+      }
+
+      #cam-overlay-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      .cam-zones-guide {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        grid-template-columns: 24% 52% 24%;
+        pointer-events: none;
+        font-family: var(--font-mono);
+        font-size: 9px;
+        font-weight: 800;
+      }
+
+      .cam-zone-l,
+      .cam-zone-r {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 240, 255, 0.06);
+        border-right: 1px dashed rgba(0, 240, 255, 0.35);
+        color: rgba(0, 240, 255, 0.85);
+      }
+
+      .cam-zone-r {
+        border-right: none;
+        border-left: 1px dashed rgba(255, 170, 0, 0.45);
+        background: rgba(255, 170, 0, 0.06);
+        color: rgba(255, 170, 0, 0.9);
+      }
+
+      .cam-zone-c {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding-bottom: 4px;
+        color: rgba(255, 255, 255, 0.65);
+      }
+
+      /* 5. VIRTUAL AIR-CURSOR ("TocuH" 2.0 HAND POINTER + DWELL PROGRESS RING) */
+      #air-cursor {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        width: 68px;
+        height: 68px;
+        margin-left: -34px;
+        margin-top: -34px;
+        pointer-events: none;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.04s linear;
+      }
+
+      #air-cursor svg {
+        width: 68px;
+        height: 68px;
+        transform: rotate(-90deg);
+        filter: drop-shadow(0 0 10px var(--holo-cyan));
+      }
+
+      .air-cursor-core {
+        position: absolute;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(0, 240, 255, 0.95) 0%, rgba(0, 240, 255, 0.2) 70%);
+        border: 2px solid #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        box-shadow: 0 0 18px var(--holo-cyan);
+      }
+
+      #air-cursor.clicking .air-cursor-core {
+        transform: scale(1.35);
+        background: radial-gradient(circle, #ffaa00 0%, #ff4500 80%);
+        box-shadow: 0 0 30px #ffaa00;
+      }
+
+      /* Gesture Feedback Banner */
+      .gesture-toast {
+        position: fixed;
+        top: 78px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-20px);
+        background: rgba(3, 12, 26, 0.95);
+        border: 2px solid var(--holo-cyan);
+        color: #fff;
+        font-family: var(--font-sci);
+        font-size: 14px;
+        font-weight: 900;
+        padding: 10px 22px;
+        border-radius: 999px;
+        box-shadow: 0 0 30px rgba(0, 240, 255, 0.6);
+        z-index: 500;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .gesture-toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+
+      /* 6. MODALS (DISH DETAIL MODAL + CAMERA SETUP MODAL) */
+      .kiosk-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(2, 6, 14, 0.86);
+        backdrop-filter: blur(14px);
+        z-index: 300;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .kiosk-modal-backdrop.open {
+        display: flex;
+      }
+
+      .kiosk-modal-card {
+        width: min(760px, 95vw);
+        background: #081120;
+        border: 2px solid var(--holo-amber);
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.9), 0 0 40px rgba(255, 170, 0, 0.25);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .modal-hero {
+        position: relative;
+        height: 250px;
+        background: #030710;
+      }
+
+      .modal-hero img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: saturate(1.4) contrast(1.15);
+      }
+
+      .modal-body {
+        padding: 22px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .modal-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-top: 6px;
+      }
+
+      .modal-big-btn {
+        appearance: none;
+        border: 2px solid var(--holo-emerald);
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(5, 150, 105, 0.5));
+        color: #fff;
+        font-family: var(--font-sci);
+        font-size: 15px;
+        font-weight: 900;
+        padding: 16px;
+        border-radius: 16px;
+        cursor: pointer;
+        text-align: center;
+      }
+
+      .modal-big-btn.close-variant {
+        border-color: rgba(255, 255, 255, 0.3);
+        background: rgba(30, 41, 59, 0.85);
+      }
+
+      /* Setup Form Controls */
+      .setup-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .setup-select {
+        background: #0f172a;
+        color: #fff;
+        border: 1.5px solid var(--holo-cyan);
+        padding: 8px 12px;
+        border-radius: 10px;
+        font-family: var(--font-sans);
+        font-size: 13px;
+      }
+
+      /* Responsive Adjustments for Tablet / Mobile Portrait */
+      @media (max-width: 1024px) {
+        .kiosk-main {
+          grid-template-columns: 1fr;
+          grid-template-rows: auto 1fr;
+        }
+        .cat-rail {
+          flex-direction: row;
+          overflow-x: auto;
+          overflow-y: hidden;
+          padding: 8px;
+        }
+        .cat-rail-header {
+          display: none;
+        }
+        .cat-tile {
+          min-width: 155px;
+          padding: 8px 10px;
+        }
+        .dishes-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .stage-wrapper {
+          grid-template-columns: 54px 1fr 54px;
+        }
+        .cam-sensor-dock {
+          width: 175px;
+          bottom: 62px;
+          right: 12px;
+        }
+        .cam-preview-box {
+          height: 88px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Subtle Shop-Window Glass Overlay -->
+    <div class="window-glass-sheen"></div>
+
+    <!-- Floating Gesture Notification Toast -->
+    <div class="gesture-toast" id="gesture-toast">
+      👋 AIR-SWIPE ERKANNT · BLÄTTERE WEITER!
+    </div>
+
+    <!-- Virtual "TocuH" 2.0 Air-Cursor -->
+    <div id="air-cursor">
+      <svg viewBox="0 0 68 68">
+        <circle
+          cx="34"
+          cy="34"
+          r="29"
+          fill="none"
+          stroke="rgba(0, 240, 255, 0.22)"
+          stroke-width="4"
+        />
+        <circle
+          id="dwell-ring"
+          cx="34"
+          cy="34"
+          r="29"
+          fill="none"
+          stroke="#ffaa00"
+          stroke-width="5"
+          stroke-linecap="round"
+          stroke-dasharray="182.2"
+          stroke-dashoffset="182.2"
+        />
+      </svg>
+      <div class="air-cursor-core" id="air-cursor-icon">✋</div>
+    </div>
+
+    <!-- Main Kiosk Shell -->
+    <div class="kiosk-viewport">
+      <!-- 1. TOP KIOSK HEADER -->
+      <header class="kiosk-header">
+        <div class="brand-cluster">
+          <div class="tocuh-badge">
+            <span class="tocuh-dot"></span>
+            <span class="tocuh-title">"TocuH" 2.0 V1</span>
+          </div>
+          <div>
+            <div style="font-weight: 800; font-size: 13.5px; color: #fff">
+              LAVA GRILL · SCHAUFENSTER-TERMINAL HINTER GLAS
+            </div>
+            <div class="tocuh-sub" id="tracking-mode-Readout">
+              🪟 BERÜHRUNGSLOS PER KAMERA BLÄTTERN & AUSWÄHLEN
+            </div>
+          </div>
+        </div>
+
+        <div class="gesture-status-bar">
+          <span class="gesture-chip">✋ <strong>0,8s Halten</strong> = Klick</span>
+          <span class="gesture-chip">👋 <strong>Wischen L/R</strong> = Umblättern</span>
+          <span class="gesture-chip">👌 <strong>Pinch</strong> = Direkt-Klick</span>
+        </div>
+
+        <div class="header-actions">
+          <button class="kiosk-btn cam-btn" id="btn-toggle-cam" data-air-target>
+            📹 Kamera starten (Live)
+          </button>
+          <button class="kiosk-btn demo-btn active" id="btn-toggle-demo" data-air-target>
+            🤖 Auto-Passant
+          </button>
+          <button class="kiosk-btn" id="btn-open-setup" data-air-target>
+            ⚙️ Kamera-Setup
+          </button>
+          <button class="kiosk-btn" id="btn-fullscreen" data-air-target>
+            ⛶ Vollbild (Monitor)
+          </button>
+          <a class="kiosk-btn link-v6" href="../lava-ar-v6/index.html" id="link-parallax-v6" data-air-target>
+            📡 Parallax V6
+          </a>
+        </div>
+      </header>
+
+      <!-- 2. PARALLAX KIOSK STAGE -->
+      <div class="kiosk-parallax-stage" id="parallax-stage">
+        <div class="kiosk-main">
+          <!-- Left Fast-Food Category Rail -->
+          <aside class="cat-rail" id="cat-rail">
+            <div class="cat-rail-header">
+              <span>📂 KATEGORIEN</span>
+              <span id="cat-total-badge">92 GERICHTE</span>
+            </div>
+            <div id="cat-buttons-container" style="display: contents"></div>
+
+            <!-- Live Camera & Motion Radar Dock cleanly integrated in Sidebar -->
+            <div class="cam-sensor-dock" id="cam-sensor-dock">
+              <div class="cam-dock-header">
+                <span id="cam-dock-status">📡 SENSOR: AUTO-SIM</span>
+                <span id="cam-fps-badge" style="color: var(--holo-amber)">60 FPS</span>
+              </div>
+              <div class="cam-preview-box">
+                <video id="cam-video" class="mirrored" playsinline muted></video>
+                <canvas id="cam-overlay-canvas" width="220" height="92"></canvas>
+                <div class="cam-zones-guide">
+                  <div class="cam-zone-l">◀ ZURÜCK</div>
+                  <div class="cam-zone-c">✋ AIR-CURSOR</div>
+                  <div class="cam-zone-r">WEITER ▶</div>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <!-- Center Stage with Left & Right Giant Air-Flipper Columns -->
+          <div class="stage-wrapper">
+            <!-- Left Air-Flipper Zone -->
+            <button class="air-flipper-col prev-col" id="btn-prev-page" data-air-target>
+              <span class="flipper-arrow">◀</span>
+              <span class="flipper-label">ZURÜCK BLÄTTERN</span>
+              <span class="flipper-sub">✋ HALTEN ODER WISCHEN</span>
+            </button>
+
+            <!-- Center 3x2 Fast-Food Dish Grid -->
+            <main class="menu-stage-center">
+              <div class="stage-top-bar">
+                <div class="stage-cat-title" id="active-cat-heading">
+                  🔥 HIGHLIGHTS & BESTSELLER
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px">
+                  <button
+                    class="kiosk-btn"
+                    id="btn-next-cat"
+                    data-air-target
+                    style="padding: 5px 12px; font-size: 10.5px; border-color: var(--holo-cyan)"
+                  >
+                    ⏭️ Nächste Kategorie
+                  </button>
+                  <div class="stage-page-pill" id="page-indicator">SEITE 1 / 2</div>
+                </div>
+              </div>
+
+              <div class="dishes-grid" id="dishes-grid"></div>
+            </main>
+
+            <!-- Right Air-Flipper Zone -->
+            <button class="air-flipper-col next-col" id="btn-next-page" data-air-target>
+              <span class="flipper-arrow">▶</span>
+              <span class="flipper-label">WEITER BLÄTTERN</span>
+              <span class="flipper-sub">✋ HALTEN ODER WISCHEN</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. BOTTOM SCHAUFENSTER-MERKZETTEL BAR -->
+        <footer class="kiosk-bottom-tray">
+          <div class="tray-left">
+            <span class="tray-label">🧾 MEINE SCHAUFENSTER-AUSWAHL:</span>
+            <div class="tray-items-list" id="tray-items-list">
+              <span style="font-size: 12px; color: var(--text-muted)">
+                Halte deine Hand 0,8s auf ein Gericht, um Details zu sehen oder Nummern für den Tresen zu merken!
+              </span>
+            </div>
+          </div>
+          <div class="tray-right">
+            <div class="tray-total">
+              GESAMT: <span id="tray-total-price">0,00 €</span>
+            </div>
+            <button
+              class="kiosk-btn"
+              id="btn-clear-tray"
+              data-air-target
+              style="border-color: rgba(255, 69, 0, 0.5); color: #fca5a5"
+            >
+              🗑️ Leeren
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+
+    <!-- 5. DISH SPOTLIGHT MODAL (HANDS-FREE COMPATIBLE) -->
+    <div class="kiosk-modal-backdrop" id="dish-modal">
+      <div class="kiosk-modal-card">
+        <div class="modal-hero">
+          <img id="modal-dish-img" src="img/food-grillteller.webp" alt="Gericht" />
+          <div
+            class="dish-nr-badge"
+            id="modal-dish-nr"
+            style="font-size: 18px; padding: 6px 14px; top: 14px; left: 14px"
+          >
+            Nr. 67
+          </div>
+        </div>
+        <div class="modal-body">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px">
+            <div>
+              <h2
+                id="modal-dish-title"
+                style="font-family: var(--font-sci); font-size: 24px; color: #fff"
+              >
+                SPEZIAL GRILLTELLER
+              </h2>
+              <p id="modal-dish-desc" style="color: #cbd5e1; font-size: 14px; margin-top: 4px">
+                1 Adana Kebab, 1 Lammkotelett, 1 Nackensteak, 1 Hähnchenbrustfilet, Gyros
+              </p>
+            </div>
+            <div
+              id="modal-dish-price"
+              style="font-family: var(--font-sci); font-size: 26px; font-weight: 900; color: var(--holo-amber); white-space: nowrap"
+            >
+              19,50 €
+            </div>
+          </div>
+
+          <div
+            id="modal-size-options"
+            style="display: flex; gap: 10px; flex-wrap: wrap"
+          ></div>
+
+          <div class="modal-actions">
+            <button class="modal-big-btn" id="btn-modal-add" data-air-target>
+              ➕ AUF MERKZETTEL SETZEN
+            </button>
+            <button class="modal-big-btn close-variant" id="btn-modal-close" data-air-target>
+              ✕ WEITER BLÄTTERN
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. CAMERA PLACEMENT & CALIBRATION MODAL -->
+    <div class="kiosk-modal-backdrop" id="setup-modal">
+      <div class="kiosk-modal-card" style="border-color: var(--holo-cyan)">
+        <div class="modal-body">
+          <h2 style="font-family: var(--font-sci); font-size: 20px; color: var(--holo-cyan)">
+            ⚙️ KAMERA-AUFSTELLUNG & MONITOR-KALIBRIERUNG
+          </h2>
+          <p style="font-size: 13px; color: #cbd5e1">
+            Egal ob deine Kamera direkt am Monitor klebt oder weiter hinten im Raum steht: Hier kannst du Kamera, Spiegelung und Empfindlichkeit sofort anpassen.
+          </p>
+
+          <div class="setup-row">
+            <span>📹 <strong>Kamera-Gerät auswählen:</strong></span>
+            <select class="setup-select" id="camera-select">
+              <option value="">Standard-Kamera (Webcam / USB)</option>
+            </select>
+          </div>
+
+          <div class="setup-row">
+            <span>↔️ <strong>Horizontal spiegeln</strong> (An = Kamera schaut zu dir):</span>
+            <button class="kiosk-btn cam-btn active" id="btn-toggle-mirror" data-air-target>
+              Spiegelung: AN
+            </button>
+          </div>
+
+          <div class="setup-row">
+            <span>⏱️ <strong>Hover-Klick-Dauer</strong> (Haltezeit für Klick):</span>
+            <select class="setup-select" id="dwell-select">
+              <option value="600">Schnell (0,6 Sekunden)</option>
+              <option value="850" selected>Standard (0,85 Sekunden)</option>
+              <option value="1200">Entspannt (1,2 Sekunden)</option>
+            </select>
+          </div>
+
+          <div class="modal-actions">
+            <button class="modal-big-btn" id="btn-setup-start-cam" data-air-target>
+              📹 KAMERA JETZT AKTIVIEREN
+            </button>
+            <button class="modal-big-btn close-variant" id="btn-setup-close" data-air-target>
+              ✓ FERTIG & SCHLIESSEN
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { kategorien } from './menu.js'
+
+      /* -------------------------------------------------------------
+       * 1. FAST-FOOD KIOSK CATEGORIES & HDR FOOD PHOTO MAPPING
+       * ------------------------------------------------------------- */
+      function getPhotoForDish(katId, dish) {
+        const nameLow = dish.name.toLowerCase()
+        if (dish.nr === 67 || nameLow.includes('spezial teller') || nameLow.includes('lava teller'))
+          return 'img/food-grillteller.webp'
+        if (katId === 'grill') {
+          if (nameLow.includes('spieß') || nameLow.includes('schaschlik') || nameLow.includes('adana'))
+            return 'img/grill.webp'
+          return 'img/food-grillteller.webp'
+        }
+        if (katId === 'pizza') {
+          if (nameLow.includes('margherita')) return 'img/food-pizza-margherita.webp'
+          if (nameLow.includes('kebab') || nameLow.includes('gyros') || nameLow.includes('lava'))
+            return 'img/food-pizza-kebab.webp'
+          return 'img/food-pizza.webp'
+        }
+        if (katId === 'calzone') return 'img/food-calzone.webp'
+        if (katId === 'rollo' || katId === 'baguette') return 'img/food-rollo.webp'
+        if (katId === 'salate' || katId === 'vorspeisen') {
+          if (nameLow.includes('bauernsalat')) return 'img/food-bauernsalat.webp'
+          return 'img/food-salat.webp'
+        }
+        if (nameLow.includes('dürüm')) return 'img/food-duerum.webp'
+        if (nameLow.includes('lahmacun')) return 'img/food-lahmacun.webp'
+        if (katId === 'fleisch') {
+          if (nameLow.includes('teller')) return 'img/food-doenerteller.webp'
+          return 'img/spiess.webp'
+        }
+        if (katId === 'vegetarisch') return 'img/food-duerum.webp'
+        return 'img/lava.webp'
+      }
+
+      // Flatten all dishes with category reference
+      const allDishes = []
+      kategorien.forEach((k) => {
+        k.gerichte.forEach((g) => {
+          const fullTitle =
+            k.kurz && !g.name.toLowerCase().startsWith(k.kurz.toLowerCase())
+              ? `${k.kurz} ${g.name}`
+              : g.name
+          allDishes.push({
+            ...g,
+            fullTitle,
+            katId: k.id,
+            katTitel: k.titel,
+            groessen: k.groessen || null,
+            photo: getPhotoForDish(k.id, g),
+          })
+        })
+      })
+
+      // Build Fast-Food Self-Order Category Groups
+      const highlightOrder = [67, 55, 22, 28, 64, 9, 13, 57, 71, 29, 68, 74]
+      const KIOSK_CATEGORIES = [
+        {
+          id: 'highlights',
+          icon: '🔥',
+          name: 'Highlights & Bestseller',
+          items: highlightOrder
+            .map((nr) => allDishes.find((d) => d.nr === nr))
+            .filter(Boolean),
+        },
+        {
+          id: 'grill',
+          icon: '🥩',
+          name: 'Vom Lavastein-Grill',
+          items: allDishes.filter((d) => d.katId === 'grill'),
+        },
+        {
+          id: 'fleisch',
+          icon: '🥙',
+          name: 'Drehspieß, Döner & Dürüm',
+          items: allDishes.filter((d) => d.katId === 'fleisch' || d.katId === 'vegetarisch'),
+        },
+        {
+          id: 'pizza',
+          icon: '🍕',
+          name: 'Steinofen-Pizza',
+          items: allDishes.filter((d) => d.katId === 'pizza'),
+        },
+        {
+          id: 'calzone_rollo',
+          icon: '🥟',
+          name: 'Calzone, Rollo & Baguette',
+          items: allDishes.filter((d) =>
+            ['calzone', 'rollo', 'baguette', 'ueberbacken'].includes(d.katId)
+          ),
+        },
+        {
+          id: 'salate_vorspeisen',
+          icon: '🥗',
+          name: 'Salate & Vorspeisen',
+          items: allDishes.filter((d) => ['salate', 'vorspeisen'].includes(d.katId)),
+        },
+        {
+          id: 'schnitzel_nudeln',
+          icon: '🍔',
+          name: 'Schnitzel, Pasta & Kids',
+          items: allDishes.filter((d) => ['schnitzel', 'nudeln', 'kids'].includes(d.katId)),
+        },
+        {
+          id: 'beilagen_sossen',
+          icon: '🍟',
+          name: 'Beilagen & Haus-Soßen',
+          items: allDishes.filter((d) => ['beilagen', 'sossen'].includes(d.katId)),
+        },
+      ]
+
+      function fmtEuro(val) {
+        return Number(val).toFixed(2).replace('.', ',') + ' €'
+      }
+
+      /* -------------------------------------------------------------
+       * 2. KIOSK STATE, PAGINATION & RENDERING
+       * ------------------------------------------------------------- */
+      let activeCatIdx = 0
+      let currentPage = 0
+      const ITEMS_PER_PAGE = 6
+      const selectedTray = []
+      let activeModalDish = null
+
+      const catButtonsContainer = document.getElementById('cat-buttons-container')
+      const dishesGrid = document.getElementById('dishes-grid')
+      const activeCatHeading = document.getElementById('active-cat-heading')
+      const pageIndicator = document.getElementById('page-indicator')
+      const gestureToast = document.getElementById('gesture-toast')
+      let toastTimer = null
+
+      function showGestureToast(msg) {
+        gestureToast.textContent = msg
+        gestureToast.classList.add('show')
+        if (toastTimer) clearTimeout(toastTimer)
+        toastTimer = setTimeout(() => gestureToast.classList.remove('show'), 1800)
+      }
+
+      function renderCategoryRail() {
+        catButtonsContainer.innerHTML = ''
+        KIOSK_CATEGORIES.forEach((cat, idx) => {
+          const btn = document.createElement('button')
+          btn.className = 'cat-tile' + (idx === activeCatIdx ? ' active' : '')
+          btn.setAttribute('data-air-target', 'true')
+          btn.setAttribute('data-cat-idx', idx)
+          btn.innerHTML = `
+            <div class="cat-tile-left">
+              <span class="cat-icon">${cat.icon}</span>
+              <span class="cat-name">${cat.name}</span>
+            </div>
+            <span class="cat-count">${cat.items.length}</span>
+          `
+          btn.onclick = () => selectCategory(idx)
+          catButtonsContainer.appendChild(btn)
+        })
+      }
+
+      function selectCategory(idx) {
+        activeCatIdx = (idx + KIOSK_CATEGORIES.length) % KIOSK_CATEGORIES.length
+        currentPage = 0
+        renderCategoryRail()
+        renderDishesPage('next')
+        const cat = KIOSK_CATEGORIES[activeCatIdx]
+        showGestureToast(`${cat.icon} KATEGORIE: ${cat.name.toUpperCase()}`)
+      }
+
+      function getPageCount() {
+        const items = KIOSK_CATEGORIES[activeCatIdx].items
+        return Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE))
+      }
+
+      function renderDishesPage(direction = null) {
+        const cat = KIOSK_CATEGORIES[activeCatIdx]
+        const totalPages = getPageCount()
+        if (currentPage >= totalPages) currentPage = 0
+        if (currentPage < 0) currentPage = totalPages - 1
+
+        activeCatHeading.textContent = `${cat.icon} ${cat.name.toUpperCase()}`
+        pageIndicator.textContent = `SEITE ${currentPage + 1} / ${totalPages}`
+
+        if (direction) {
+          dishesGrid.classList.add(direction === 'next' ? 'flip-anim-next' : 'flip-anim-prev')
+          setTimeout(() => {
+            dishesGrid.classList.remove('flip-anim-next', 'flip-anim-prev')
+          }, 220)
+        }
+
+        const start = currentPage * ITEMS_PER_PAGE
+        const pageItems = cat.items.slice(start, start + ITEMS_PER_PAGE)
+
+        dishesGrid.innerHTML = ''
+        pageItems.forEach((dish) => {
+          const priceStr =
+            dish.preise.length > 1
+              ? `${fmtEuro(dish.preise[0])} / ${fmtEuro(dish.preise[1])}`
+              : fmtEuro(dish.preise[0])
+
+          const card = document.createElement('div')
+          card.className = 'kiosk-dish-card'
+          card.setAttribute('data-air-target', 'true')
+          card.setAttribute('data-dish-nr', dish.nr)
+          card.innerHTML = `
+            <div class="dish-img-wrap">
+              <img class="dish-img" src="${dish.photo}" alt="${dish.fullTitle}" loading="lazy" />
+              <span class="dish-nr-badge">Nr. ${dish.nr}</span>
+              ${dish.veg ? '<span class="dish-veg-badge">🌿 VEG</span>' : ''}
+            </div>
+            <div class="dish-card-body">
+              <div>
+                <div class="dish-card-title">${dish.fullTitle}</div>
+                <div class="dish-card-desc">${dish.text || dish.katTitel + ' – frisch zubereitet'}</div>
+              </div>
+              <div class="dish-card-footer">
+                <span class="dish-price-tag">${priceStr}</span>
+                <span class="dish-touch-cta">✋ AUSWÄHLEN</span>
+              </div>
+            </div>
+          `
+          card.onclick = () => openDishModal(dish)
+          dishesGrid.appendChild(card)
+        })
+      }
+
+      function nextPage() {
+        const total = getPageCount()
+        if (total > 1) {
+          currentPage = (currentPage + 1) % total
+          renderDishesPage('next')
+          showGestureToast(`👋 UMBLÄTTERN → SEITE ${currentPage + 1} VON ${total}`)
+        } else {
+          selectCategory(activeCatIdx + 1)
+        }
+      }
+
+      function prevPage() {
+        const total = getPageCount()
+        if (total > 1) {
+          currentPage = (currentPage - 1 + total) % total
+          renderDishesPage('prev')
+          showGestureToast(`👋 ZURÜCKBLÄTTERN → SEITE ${currentPage + 1} VON ${total}`)
+        } else {
+          selectCategory(activeCatIdx - 1)
+        }
+      }
+
+      document.getElementById('btn-next-page').onclick = nextPage
+      document.getElementById('btn-prev-page').onclick = prevPage
+      document.getElementById('btn-next-cat').onclick = () => selectCategory(activeCatIdx + 1)
+
+      /* -------------------------------------------------------------
+       * 3. DISH SPOTLIGHT MODAL & SCHAUFENSTER-MERKZETTEL
+       * ------------------------------------------------------------- */
+      const dishModal = document.getElementById('dish-modal')
+      const modalDishImg = document.getElementById('modal-dish-img')
+      const modalDishNr = document.getElementById('modal-dish-nr')
+      const modalDishTitle = document.getElementById('modal-dish-title')
+      const modalDishDesc = document.getElementById('modal-dish-desc')
+      const modalDishPrice = document.getElementById('modal-dish-price')
+      const modalSizeOptions = document.getElementById('modal-size-options')
+      let selectedSizeIdx = 0
+
+      function openDishModal(dish) {
+        activeModalDish = dish
+        selectedSizeIdx = 0
+        modalDishImg.src = dish.photo
+        modalDishNr.textContent = `Nr. ${dish.nr}`
+        modalDishTitle.textContent = dish.fullTitle
+        modalDishDesc.textContent = dish.text || `${dish.katTitel} – frisch bei Lava Grill`
+        modalDishPrice.textContent = fmtEuro(dish.preise[0])
+
+        modalSizeOptions.innerHTML = ''
+        if (dish.preise.length > 1) {
+          dish.preise.forEach((p, idx) => {
+            const label = dish.groessen && dish.groessen[idx] ? dish.groessen[idx] : `Größe ${idx + 1}`
+            const b = document.createElement('button')
+            b.className = 'kiosk-btn' + (idx === 0 ? ' cam-btn active' : '')
+            b.setAttribute('data-air-target', 'true')
+            b.textContent = `${label.toUpperCase()} · ${fmtEuro(p)}`
+            b.onclick = () => {
+              selectedSizeIdx = idx
+              modalDishPrice.textContent = fmtEuro(p)
+              Array.from(modalSizeOptions.children).forEach((c, i) => {
+                c.className = 'kiosk-btn' + (i === idx ? ' cam-btn active' : '')
+              })
+            }
+            modalSizeOptions.appendChild(b)
+          })
+        }
+
+        dishModal.classList.add('open')
+        showGestureToast(`🔍 DETAILS: NR. ${dish.nr} ${dish.fullTitle.toUpperCase()}`)
+      }
+
+      function addActiveDishToTray() {
+        if (!activeModalDish) return
+        const price = activeModalDish.preise[selectedSizeIdx] || activeModalDish.preise[0]
+        selectedTray.push({
+          nr: activeModalDish.nr,
+          title: activeModalDish.fullTitle,
+          price,
+        })
+        renderTray()
+        dishModal.classList.remove('open')
+        showGestureToast(`✅ NR. ${activeModalDish.nr} AUF MERKZETTEL GESETZT!`)
+      }
+
+      function renderTray() {
+        const list = document.getElementById('tray-items-list')
+        const totalEl = document.getElementById('tray-total-price')
+        if (selectedTray.length === 0) {
+          list.innerHTML = `<span style="font-size: 12px; color: var(--text-muted)">Halte deine Hand 0,8s auf ein Gericht, um Details zu sehen oder Nummern für den Tresen zu merken!</span>`
+          totalEl.textContent = '0,00 €'
+          return
+        }
+        list.innerHTML = ''
+        let sum = 0
+        selectedTray.forEach((item) => {
+          sum += Number(item.price)
+          const chip = document.createElement('span')
+          chip.className = 'tray-chip'
+          chip.textContent = `Nr. ${item.nr} ${item.title} (${fmtEuro(item.price)})`
+          list.appendChild(chip)
+        })
+        totalEl.textContent = fmtEuro(sum)
+      }
+
+      document.getElementById('btn-modal-add').onclick = addActiveDishToTray
+      document.getElementById('btn-modal-close').onclick = () => dishModal.classList.remove('open')
+      document.getElementById('btn-clear-tray').onclick = () => {
+        selectedTray.length = 0
+        renderTray()
+        showGestureToast('🗑️ SCHAUFENSTER-MERKZETTEL GELEERT')
+      }
+
+      renderCategoryRail()
+      renderDishesPage()
+
+      /* -------------------------------------------------------------
+       * 4. VIRTUAL "TocuH" 2.0 AIR-CURSOR & DWELL-CLICK ENGINE
+       * ------------------------------------------------------------- */
+      const airCursor = document.getElementById('air-cursor')
+      const dwellRing = document.getElementById('dwell-ring')
+      const airCursorIcon = document.getElementById('air-cursor-icon')
+      const parallaxStage = document.getElementById('parallax-stage')
+      const CIRCUMFERENCE = 182.2
+
+      let cursorX = window.innerWidth * 0.5
+      let cursorY = window.innerHeight * 0.5
+      let targetCursorX = cursorX
+      let targetCursorY = cursorY
+
+      let hoveredTarget = null
+      let hoverStartTime = 0
+      let dwellDurationMs = 850
+      let lastClickTime = 0
+
+      function triggerAirClick(el) {
+        if (!el) return
+        const now = performance.now()
+        if (now - lastClickTime < 650) return
+        lastClickTime = now
+
+        airCursor.classList.add('clicking')
+        airCursorIcon.textContent = '⚡'
+        setTimeout(() => {
+          airCursor.classList.remove('clicking')
+          airCursorIcon.textContent = '✋'
+        }, 320)
+
+        el.click()
+      }
+
+      function updateAirCursorAndDwell(now) {
+        // Smooth cursor interpolation
+        cursorX += (targetCursorX - cursorX) * 0.22
+        cursorY += (targetCursorY - cursorY) * 0.22
+
+        airCursor.style.transform = `translate3d(${cursorX - window.innerWidth * 0.5}px, ${cursorY - window.innerHeight * 0.5}px, 0)`
+
+        // Subtle 3D Motion Parallax on the Kiosk Stage based on Viewer/Hand Position
+        const normX = (cursorX / window.innerWidth - 0.5) * 2 // -1 .. +1
+        const normY = (cursorY / window.innerHeight - 0.5) * 2 // -1 .. +1
+        parallaxStage.style.transform = `rotateY(${normX * 3.2}deg) rotateX(${-normY * 2.2}deg)`
+
+        // Hit-test element under Air-Cursor
+        const hitEl = document.elementFromPoint(cursorX, cursorY)
+        const airTarget = hitEl ? hitEl.closest('[data-air-target]') : null
+
+        if (airTarget !== hoveredTarget) {
+          if (hoveredTarget) hoveredTarget.classList.remove('air-hover')
+          hoveredTarget = airTarget
+          hoverStartTime = now
+          if (hoveredTarget) hoveredTarget.classList.add('air-hover')
+        }
+
+        if (hoveredTarget && !isAutoDemoActive && now - lastClickTime > 750) {
+          const elapsed = now - hoverStartTime
+          const progress = Math.min(1, elapsed / dwellDurationMs)
+          dwellRing.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - progress))
+
+          if (progress >= 1) {
+            hoverStartTime = now + 900
+            dwellRing.style.strokeDashoffset = String(CIRCUMFERENCE)
+            triggerAirClick(hoveredTarget)
+          }
+        } else {
+          dwellRing.style.strokeDashoffset = String(CIRCUMFERENCE)
+        }
+      }
+
+      // Mouse / Touch support for testing on PC or Monitor
+      window.addEventListener('pointermove', (e) => {
+        if (!isLiveCamActive) {
+          isAutoDemoActive = false
+          document.getElementById('btn-toggle-demo').classList.remove('active')
+        }
+        targetCursorX = e.clientX
+        targetCursorY = e.clientY
+      })
+
+      // Keyboard shortcuts (ArrowLeft / ArrowRight for page flip)
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') nextPage()
+        if (e.key === 'ArrowLeft') prevPage()
+        if (e.key === 'ArrowDown') selectCategory(activeCatIdx + 1)
+        if (e.key === 'ArrowUp') selectCategory(activeCatIdx - 1)
+      })
+
+      /* -------------------------------------------------------------
+       * 5. LIVE CAMERA ENGINE (HYBRID MEDIAPIPE HANDS + 60 FPS OPTICAL FLOW)
+       * ------------------------------------------------------------- */
+      let isLiveCamActive = false
+      let isAutoDemoActive = true
+      let isMirrored = true
+      let selectedDeviceId = ''
+      let mediaStream = null
+      let mpHands = null
+      let lastMpResultTime = 0
+
+      const camVideo = document.getElementById('cam-video')
+      const camCanvas = document.getElementById('cam-overlay-canvas')
+      const camCtx = camCanvas.getContext('2d')
+      const btnToggleCam = document.getElementById('btn-toggle-cam')
+      const btnToggleDemo = document.getElementById('btn-toggle-demo')
+      const camDockStatus = document.getElementById('cam-dock-status')
+      const trackingModeReadout = document.getElementById('tracking-mode-Readout')
+
+      // Offscreen 80x60 motion & optical-flow buffer
+      const mW = 80
+      const mH = 60
+      const mCvs = document.createElement('canvas')
+      mCvs.width = mW
+      mCvs.height = mH
+      const mCtx = mCvs.getContext('2d', { willReadFrequently: true })
+      let prevFrame = null
+      let prevCentroidX = null
+      let swipeCooldownUntil = 0
+
+      async function populateCameraList() {
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices()
+          const videoDevices = devices.filter((d) => d.kind === 'videoinput')
+          const select = document.getElementById('camera-select')
+          if (videoDevices.length === 0) return
+          select.innerHTML = ''
+          videoDevices.forEach((d, idx) => {
+            const opt = document.createElement('option')
+            opt.value = d.deviceId
+            opt.textContent = d.label || `Kamera ${idx + 1} (USB / Webcam)`
+            select.appendChild(opt)
+          })
+        } catch (err) {
+          // Ignore if permission not yet granted
+        }
+      }
+
+      async function startLiveCamera(deviceId = '') {
+        try {
+          if (mediaStream) {
+            mediaStream.getTracks().forEach((t) => t.stop())
+          }
+          const constraints = {
+            video: deviceId
+              ? { deviceId: { exact: deviceId }, width: { ideal: 640 }, height: { ideal: 480 } }
+              : { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+            audio: false,
+          }
+          mediaStream = await navigator.mediaDevices.getUserMedia(constraints)
+          camVideo.srcObject = mediaStream
+          await camVideo.play()
+
+          isLiveCamActive = true
+          isAutoDemoActive = false
+          prevFrame = null
+          btnToggleCam.classList.add('active')
+          btnToggleCam.textContent = '🟢 Live-Kamera Aktiv'
+          btnToggleDemo.classList.remove('active')
+          camDockStatus.textContent = '🟢 LIVE-KAMERA TRACKING'
+          trackingModeReadout.textContent =
+            '📹 KAMERA AKTIV · BEWEGE DEINE HAND VOR DEM MONITOR ZUM STEUERN & BLÄTTERN!'
+          showGestureToast('📹 LIVE-KAMERA AKTIVIERT · HALTE DEINE HAND INS BILD!')
+
+          await populateCameraList()
+          initMediaPipeHandsIfAvailable()
+        } catch (err) {
+          showGestureToast('⚠️ KAMERA-ZUGRIFF BLOCKIERT ODER KEINE KAMERA GEFUNDEN')
+        }
+      }
+
+      function stopLiveCamera() {
+        if (mediaStream) {
+          mediaStream.getTracks().forEach((t) => t.stop())
+          mediaStream = null
+        }
+        isLiveCamActive = false
+        btnToggleCam.classList.remove('active')
+        btnToggleCam.textContent = '📹 Kamera starten (Live)'
+        camDockStatus.textContent = '📡 SENSOR: AUTO-SIMULATION'
+      }
+
+      function initMediaPipeHandsIfAvailable() {
+        if (mpHands || typeof window.Hands === 'undefined') return
+        try {
+          mpHands = new window.Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+          })
+          mpHands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 0,
+            minDetectionConfidence: 0.55,
+            minTrackingConfidence: 0.55,
+          })
+          mpHands.onResults((results) => {
+            if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) return
+            lastMpResultTime = performance.now()
+            const lm = results.multiHandLandmarks[0]
+            // Index Finger Tip (#8) and Thumb Tip (#4)
+            const indexTip = lm[8]
+            const thumbTip = lm[4]
+            const rawX = isMirrored ? 1 - indexTip.x : indexTip.x
+            const rawY = indexTip.y
+
+            // Map active camera region [0.12..0.88] to full monitor width/height
+            const mappedX = Math.max(0, Math.min(1, (rawX - 0.12) / 0.76))
+            const mappedY = Math.max(0, Math.min(1, (rawY - 0.12) / 0.76))
+            targetCursorX = mappedX * window.innerWidth
+            targetCursorY = mappedY * window.innerHeight
+
+            // Pinch Detection (Thumb #4 + Index #8 close together)
+            const pinchDist = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y)
+            if (pinchDist < 0.048 && hoveredTarget) {
+              triggerAirClick(hoveredTarget)
+            }
+
+            // Draw 21-point Hand Skeleton on camera radar dock
+            drawHandLandmarksOnDock(lm)
+          })
+        } catch (e) {
+          // Optical-Flow engine handles everything seamlessly if CDN is offline
+        }
+      }
+
+      function drawHandLandmarksOnDock(lm) {
+        const w = camCanvas.width
+        const h = camCanvas.height
+        camCtx.clearRect(0, 0, w, h)
+        camCtx.strokeStyle = '#00f0ff'
+        camCtx.lineWidth = 2
+        lm.forEach((pt, idx) => {
+          const px = (isMirrored ? 1 - pt.x : pt.x) * w
+          const py = pt.y * h
+          camCtx.fillStyle = idx === 8 ? '#ffaa00' : '#00f0ff'
+          camCtx.beginPath()
+          camCtx.arc(px, py, idx === 8 ? 5 : 2.5, 0, Math.PI * 2)
+          camCtx.fill()
+        })
+      }
+
+      function processOpticalFlowFrame(now) {
+        if (!isLiveCamActive || camVideo.readyState < 2) return
+
+        // Send frame to MediaPipe Hands if loaded (throttled to ~20fps so main thread stays 60fps)
+        if (mpHands && now - lastMpSolveAttempt > 55) {
+          lastMpSolveAttempt = now
+          mpHands.send({ image: camVideo }).catch(() => {})
+        }
+
+        // If MediaPipe Hands locked onto a hand in the last 250ms, skip optical-flow override
+        if (now - lastMpResultTime < 250) return
+
+        mCtx.save()
+        if (isMirrored) {
+          mCtx.scale(-1, 1)
+          mCtx.drawImage(camVideo, -mW, 0, mW, mH)
+        } else {
+          mCtx.drawImage(camVideo, 0, 0, mW, mH)
+        }
+        mCtx.restore()
+
+        const data = mCtx.getImageData(0, 0, mW, mH).data
+        let sumX = 0
+        let sumY = 0
+        let totalWeight = 0
+        let motionCount = 0
+
+        const w = camCanvas.width
+        const h = camCanvas.height
+        camCtx.clearRect(0, 0, w, h)
+
+        if (prevFrame) {
+          camCtx.fillStyle = 'rgba(0, 240, 255, 0.55)'
+          for (let y = 2; y < mH - 2; y += 2) {
+            for (let x = 2; x < mW - 2; x += 2) {
+              const i = (y * mW + x) * 4
+              const diff =
+                Math.abs(data[i] - prevFrame[i]) +
+                Math.abs(data[i + 1] - prevFrame[i + 1]) +
+                Math.abs(data[i + 2] - prevFrame[i + 2])
+
+              if (diff > 48) {
+                motionCount++
+                const weight = diff
+                sumX += x * weight
+                sumY += y * weight
+                totalWeight += weight
+
+                // Draw motion pixel on radar preview
+                camCtx.fillRect((x / mW) * w, (y / mH) * h, 3, 3)
+              }
+            }
+          }
+        }
+
+        prevFrame = new Uint8ClampedArray(data)
+
+        if (motionCount > 8 && totalWeight > 0) {
+          const cx = sumX / totalWeight / mW // 0..1
+          const cy = sumY / totalWeight / mH // 0..1
+
+          // Check for rapid horizontal Air-Swipe Wave Gesture
+          if (prevCentroidX !== null && now > swipeCooldownUntil && motionCount > 24) {
+            const vx = cx - prevCentroidX
+            if (vx > 0.22) {
+              swipeCooldownUntil = now + 1150
+              nextPage()
+            } else if (vx < -0.22) {
+              swipeCooldownUntil = now + 1150
+              prevPage()
+            }
+          }
+          prevCentroidX = cx
+
+          // Guide Air-Cursor to the moving hand/arm centroid
+          const mappedX = Math.max(0, Math.min(1, (cx - 0.1) / 0.8))
+          const mappedY = Math.max(0, Math.min(1, (cy - 0.1) / 0.8))
+          targetCursorX = mappedX * window.innerWidth
+          targetCursorY = mappedY * window.innerHeight
+
+          // Draw target crosshair on radar dock
+          const rx = cx * w
+          const ry = cy * h
+          camCtx.strokeStyle = '#ffaa00'
+          camCtx.lineWidth = 2
+          camCtx.beginPath()
+          camCtx.arc(rx, ry, 10, 0, Math.PI * 2)
+          camCtx.stroke()
+        }
+      }
+      let lastMpSolveAttempt = 0
+
+      /* -------------------------------------------------------------
+       * 6. AUTO-PASSANT DEMO MODE (SIMULATES HAND BROWSING & PAGE FLIPPING)
+       * ------------------------------------------------------------- */
+      let demoLastFlipAt = 0
+
+      function updateAutoDemoHand(now) {
+        if (!isAutoDemoActive || isLiveCamActive) return
+
+        // Smooth figure-8 browsing glide across the Kiosk screen
+        const t = now * 0.00065
+        targetCursorX = window.innerWidth * (0.54 + Math.sin(t) * 0.24)
+        targetCursorY = window.innerHeight * (0.52 + Math.sin(t * 1.7) * 0.2)
+
+        // Draw simulated radar dot on dock canvas
+        const w = camCanvas.width
+        const h = camCanvas.height
+        camCtx.clearRect(0, 0, w, h)
+        const rx = (cursorX / window.innerWidth) * w
+        const ry = (cursorY / window.innerHeight) * h
+        camCtx.strokeStyle = '#00f0ff'
+        camCtx.lineWidth = 2
+        camCtx.beginPath()
+        camCtx.arc(rx, ry, 9, 0, Math.PI * 2)
+        camCtx.stroke()
+
+        // Periodically flip page in Auto-Passant Demo every 6.5s
+        if (now - demoLastFlipAt > 6500 && !dishModal.classList.contains('open') && !setupModal.classList.contains('open')) {
+          demoLastFlipAt = now
+          nextPage()
+        }
+      }
+
+      /* -------------------------------------------------------------
+       * 7. UI BUTTON BINDINGS & SETUP MODAL
+       * ------------------------------------------------------------- */
+      btnToggleCam.onclick = () => {
+        if (isLiveCamActive) {
+          stopLiveCamera()
+        } else {
+          startLiveCamera(selectedDeviceId)
+        }
+      }
+
+      btnToggleDemo.onclick = () => {
+        if (isLiveCamActive) stopLiveCamera()
+        isAutoDemoActive = !isAutoDemoActive
+        btnToggleDemo.classList.toggle('active', isAutoDemoActive)
+        if (isAutoDemoActive) {
+          showGestureToast('🤖 AUTO-PASSANT DEMO AKTIV')
+        }
+      }
+
+      const setupModal = document.getElementById('setup-modal')
+      document.getElementById('btn-open-setup').onclick = () => {
+        populateCameraList()
+        setupModal.classList.add('open')
+      }
+      document.getElementById('btn-setup-close').onclick = () => setupModal.classList.remove('open')
+      document.getElementById('btn-setup-start-cam').onclick = () => {
+        setupModal.classList.remove('open')
+        startLiveCamera(selectedDeviceId)
+      }
+
+      document.getElementById('camera-select').onchange = (e) => {
+        selectedDeviceId = e.target.value
+        if (isLiveCamActive) startLiveCamera(selectedDeviceId)
+      }
+
+      const btnToggleMirror = document.getElementById('btn-toggle-mirror')
+      btnToggleMirror.onclick = () => {
+        isMirrored = !isMirrored
+        camVideo.classList.toggle('mirrored', isMirrored)
+        btnToggleMirror.textContent = `Spiegelung: ${isMirrored ? 'AN' : 'AUS'}`
+        btnToggleMirror.classList.toggle('active', isMirrored)
+      }
+
+      document.getElementById('dwell-select').onchange = (e) => {
+        dwellDurationMs = Number(e.target.value)
+      }
+
+      document.getElementById('link-parallax-v6').onclick = (e) => {
+        if (window.location.pathname.endsWith('tocuh.html')) {
+          e.preventDefault()
+          window.location.href = 'index.html'
+        } else if (window.location.hostname.includes('github.io')) {
+          e.preventDefault()
+          window.location.href = '../index.html'
+        }
+      }
+
+      document.getElementById('btn-fullscreen').onclick = () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {})
+        } else {
+          document.exitFullscreen().catch(() => {})
+        }
+      }
+
+      /* -------------------------------------------------------------
+       * 8. MAIN 60 FPS LOOP
+       * ------------------------------------------------------------- */
+      function loop(now) {
+        requestAnimationFrame(loop)
+        if (isLiveCamActive) {
+          processOpticalFlowFrame(now)
+        } else if (isAutoDemoActive) {
+          updateAutoDemoHand(now)
+        }
+        updateAirCursorAndDwell(now)
+      }
+
+      requestAnimationFrame(loop)
+    </script>
+  </body>
+</html>

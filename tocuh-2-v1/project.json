@@ -1,0 +1,28 @@
+{
+  "titel": "\"TocuH\" 2.0 V1",
+  "kurz": "Berührungsloses Fast-Food-Touchscreen-Terminal hinter einer Glasscheibe: Kamera erfasst Passanten & Hände vor dem Monitor, sodass jeder im Vorbeigehen wie an einem echten Touch-Kiosk durch alle 92 Gerichte blättern und auswählen kann.",
+  "sinn": "Die sofort umsetzbare Praxis-Lösung für das Schaufenster: Ein normaler Monitor steht geschützt hinter der Glasscheibe des Restaurants, während eine Kamera (vor dem Monitor oder weiter hinten platziert) den Betrachter im Blick hat. Auf dem Bildschirm erscheint ein modernes Fast-Food-Bestellterminal (\"TocuH\" 2.0 V1). Durch Hand-Tracking, Luft-Cursor (Dwell-Hover / Pinch-Click) und Wisch-Gesten kann jeder Passant von außen durch die Glasscheibe hindurch in den Kategorien blättern, Gerichte vergrößern und seine Bestellnummern zusammenstellen – komplett ohne physischen Touchscreen.",
+  "wichtig": [
+    "Fast-Food Self-Order Kiosk UI für Monitor hinter Glas: Riesige, kontraststarke Kategorien & Speisekarten-Kacheln",
+    "Echtzeit-Kamera-Steuerung (Hybrid AI Hand-Tracking + 60 FPS Optical-Flow Wisch- & Zonen-Erkennung)",
+    "Freie Kamera-Aufstellung: Unterstützt Kamera am Monitor (Spiegel-Modus) oder Kamera weiter hinten im Raum inkl. Kamera-Wahl",
+    "3 berührungslose Bedienarten: Luft-Cursor mit 0,8s Hover-Klick, Daumen-Zeigefinger Pinch-Klick & Hand-Wischen zum Umblättern",
+    "Große Links/Rechts Air-Blätterzonen für kinderleichtes Umblättern im Vorbeigehen",
+    "Schaufenster-Merkzettel mit Bestellnummern-Anzeige (z. B. Nr. 67, Nr. 55) für die schnelle Bestellung am Tresen",
+    "Vollbild-Modus für den Zweitmonitor + Integriert ins Camera-Tracked Motion Parallax Repository"
+  ],
+  "autor": "Andreas",
+  "tags": [
+    "tocuh-2.0",
+    "v1",
+    "touchless-kiosk",
+    "schaufenster-terminal",
+    "fast-food-touch",
+    "hand-tracking",
+    "camera-control",
+    "motion-parallax",
+    "lava-grill"
+  ],
+  "typ": "lokal",
+  "stand": "live"
+}

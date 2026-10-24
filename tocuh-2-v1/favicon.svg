@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#2a160c" />
+      <stop offset="60%" stop-color="#140f0c" />
+      <stop offset="100%" stop-color="#090706" />
+    </radialGradient>
+    <linearGradient id="goldFrame" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff8e7" />
+      <stop offset="25%" stop-color="#f59e0b" />
+      <stop offset="50%" stop-color="#fde68a" />
+      <stop offset="75%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#fff8e7" />
+    </linearGradient>
+    <linearGradient id="innerLine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fde68a" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.25" />
+    </linearGradient>
+    <linearGradient id="quarzGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="35%" stop-color="#fffdf8" />
+      <stop offset="75%" stop-color="#fef3c7" />
+      <stop offset="100%" stop-color="#fde68a" />
+    </linearGradient>
+    <linearGradient id="flameGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#ea580c" />
+      <stop offset="60%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#fef08a" />
+    </linearGradient>
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background tile -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGlow)" />
+  
+  <!-- Outer luxury golden frame -->
+  <rect x="28" y="28" width="456" height="456" rx="92" fill="none" stroke="url(#goldFrame)" stroke-width="7" />
+  
+  <!-- Inner delicate hairline frame -->
+  <rect x="46" y="46" width="420" height="420" rx="76" fill="none" stroke="url(#innerLine)" stroke-width="2" />
+  
+  <!-- Frame corner accent notches -->
+  <circle cx="56" cy="56" r="3" fill="#fde68a" />
+  <circle cx="456" cy="56" r="3" fill="#fde68a" />
+  <circle cx="56" cy="456" r="3" fill="#fde68a" />
+  <circle cx="456" cy="456" r="3" fill="#fde68a" />
+
+  <!-- Mini Flame Crest above -->
+  <path d="M256,104 C263,124 280,140 280,158 C280,172 269,184 256,184 C243,184 232,172 232,158 C232,143 246,128 256,104 Z" fill="url(#flameGrad)" filter="url(#softGlow)" />
+  <path d="M256,128 C260,140 268,148 268,158 C268,165 263,172 256,172 C249,172 244,165 244,158 C244,150 251,142 256,128 Z" fill="#ffffff" />
+
+  <!-- Typographic Lockup "Lava Grill" -->
+  <text x="256" y="288" text-anchor="middle" font-family="'Fraunces', Georgia, 'Times New Roman', serif" font-size="134" font-weight="800" letter-spacing="-0.02em" fill="url(#quarzGrad)" filter="url(#softGlow)">Lava</text>
+  
+  <!-- Decorative horizontal hair splitter -->
+  <line x1="120" y1="324" x2="392" y2="324" stroke="url(#goldFrame)" stroke-width="2" stroke-linecap="round" opacity="0.85" />
+  <circle cx="256" cy="324" r="4.5" fill="#fde68a" />
+  
+  <!-- "GRILL" tracked uppercase -->
+  <text x="256" y="380" text-anchor="middle" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="46" font-weight="900" letter-spacing="0.42em" fill="#f59e0b">GRILL</text>
+  
+  <!-- Sub-caption "FRIESOYTHE" -->
+  <text x="256" y="420" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" letter-spacing="0.45em" fill="#e5d5c5" opacity="0.75">FRIESOYTHE</text>
+</svg>

@@ -1,43 +1,39 @@
-# 📡 Camera-Tracked Motion Parallax V1 (`lava-ar-v6`)
+# 📡 Camera-Tracked Motion Parallax V1 & ✋ "TocuH" 2.0 V1
 
-**Interaktives 3D-Hologramm-System mit Mehrwinkel-Kamera-Sensorik & 61-Frame Perspektiv-Synthese**  
-*Konzept & Systemarchitektur für Lava Grill (Essen)*
-
----
-
-## 💡 Die Kern-Erfindung (Wie das System funktioniert)
-
-Klassische Hologramm-Aufsteller (**Holo-Boxen / Transparente OLED-Vitrinen** oder **3D-LED-Rotoren**) haben eine physikalische Einschränkung: Das Gerät selbst ist starr montiert und zeigt ohne Sensorik nur ein flaches Bild oder ein fest ablaufendes Loop-Video.
-
-**Camera-Tracked Motion Parallax V1** löst dieses Problem durch eine Echtzeit-Kameraschleife:
-
-1. **Mehrwinkel-Kamera-Sensor am Gerät:** Eine Weitwinkel-Kamera (`-45°` links bis `+45°` rechts) erfasst Passanten, die vor oder neben dem Hologramm-Gerät stehen oder vorbeigehen.
-2. **Echtzeit-Signal an den Hologramm-Projektor (60 FPS):** Sobald sich der Betrachter bewegt, berechnet der Sensor den exakten Blickwinkel $\theta \in [-45^\circ, +45^\circ]$ und sendet ein Synchronisations-Signal an die Hologramm-Einheit.
-3. **61-Frame Perspektiv-Wechsel ("Foto-Matrix"):** Das Hologramm-Gerät schaltet verzögerungsfrei auf das exakt passende Perspektiv-Foto (`Frame #01` bis `Frame #61`) um und verschiebt gleichzeitig **5 Tiefenschichten** gegeneinander (*Anamorphic Motion Parallax*):
-   - **Schicht 1 (Tiefen-Hintergrund `-Z`):** Verschiebt sich *entgegen* der Laufrichtung des Passanten (Fenster-Tiefeneffekt).
-   - **Schicht 2 (3D-Laser-Drehteller):** Kippt perspektivisch zum Blickwinkel.
-   - **Schicht 3 (Konvexes 3D-Relief-Gericht mit HDR-Farbverstärkung):** Ultra-kräftige Farben (`saturate(1.48) contrast(1.22)`) auf schwarzem Grund (reines Schwarz = 100 % transparent im Hologramm) inkl. wanderndem Glanzlicht (*Specular Light Sheen*).
-   - **Schicht 4 (Volumetrische Lavaglut-Funken):** Schwebende Partikel im Raum.
-   - **Schicht 5 (Vordergrund-Preis-Hologramm `+Z`):** Verschiebt sich in *positiver Parallaxe* vor das Gerät – dadurch entsteht für das menschliche Auge die zwingende optische Illusion, dass das Gericht frei vor einem in der Luft schwebt.
-4. **Bewegungs-Impuls / Handgesten-Trigger:** Eine schnelle Bewegung vor der Kamera löst automatisch ein Signal zum Wechsel auf das nächste Gericht-Fotoset aus.
+**Zwei kameragesteuerte Schaufenster-Systeme für Lava Grill (Essen):**
+1. **📡 Camera-Tracked Motion Parallax V1 (`index.html`)** – 3D-Hologramm-Gerät mit Mehrwinkel-Kamera-Sensorik & 61-Frame Perspektiv-Synthese
+2. **✋ "TocuH" 2.0 V1 (`tocuh.html` / `/tocuh-2-v1/`)** – Berührungsloses Fast-Food-Touchscreen-Terminal hinter einer Glasscheibe (Monitor + Kamera-Steuerung)
 
 ---
 
-## 🚀 Live-Links
+## 🚀 Live-Links (DuoQ & GitHub Pages)
 
-- **Live auf DuoQ:** [https://duoq.pages.dev/p/lava-ar-v6/](https://duoq.pages.dev/p/lava-ar-v6/)
-- **Standalone GitHub Repository:** [https://github.com/farlightparis/camera-tracked-motion-parallax-v1](https://github.com/farlightparis/camera-tracked-motion-parallax-v1)
+| Modul | Live auf DuoQ | Live auf GitHub Pages |
+| :--- | :--- | :--- |
+| **✋ "TocuH" 2.0 V1 (Monitor hinter Glas)** | [https://duoq.pages.dev/p/tocuh-2-v1/](https://duoq.pages.dev/p/tocuh-2-v1/) | [https://farlightparis.github.io/camera-tracked-motion-parallax-v1/tocuh.html](https://farlightparis.github.io/camera-tracked-motion-parallax-v1/tocuh.html) |
+| **📡 Motion Parallax V1 (3D-Hologramm)** | [https://duoq.pages.dev/p/lava-ar-v6/](https://duoq.pages.dev/p/lava-ar-v6/) | [https://farlightparis.github.io/camera-tracked-motion-parallax-v1/](https://farlightparis.github.io/camera-tracked-motion-parallax-v1/) |
+| **📦 GitHub Repository** | [https://github.com/farlightparis/camera-tracked-motion-parallax-v1](https://github.com/farlightparis/camera-tracked-motion-parallax-v1) | — |
 
 ---
 
-## 🛠️ Funktionen im Überblick
+## ✋ Modul 2: "TocuH" 2.0 V1 – Schaufenster-Kiosk hinter einer Glasscheibe
 
-- **2 wählbare Hardware-Gehäuse:**
-  - `💎 Holo-Box`: Transparente OLED-Glasvitrine mit Laser-Bodenprojektor und grüner Kamera-Sensoreinheit.
-  - `🌀 LED-Rotor`: Rotierendes 4-Blatt-LED-Hologramm (*Hypervsn-Stil*) mit 2.400 RPM Lichtspur.
-- **3 Steuerungs-Modi:**
-  - `📹 Live-Kamera-Tracking`: Nutzt die echte Front-/Webcam via WebRTC, erkennt Kopf-/Körperbewegungen vor dem Bildschirm und steuert damit live den 3D-Winkel (`Frame #01` – `#61`).
-  - `🚶 Passanten-Lauf`: Automatische Simulation eines Passanten, der von `-40°` links nach `+40°` rechts am Schaufenster vorbeigeht.
-  - `🎚️ Manueller Winkel-Regler & Touch-Drag`: Stufenloses Testen jedes einzelnen Foto-Frames zwischen `-45°` und `+45°`.
-- **6 Ultra-Vivid Hologramm-Gerichte + Komplette Speisekarte (92 Gerichte):**
-  - Direktzugriff auf 6 Signature-Hologramme (*Spezial-Grillteller*, *Drehspieß Teller*, *Pizza Lava Ø 32 cm*, *Calzone Lava XXL*, *Dürüm & Lahmacun*, *Frischer Bauernsalat*) sowie die integrierte Speisekarte mit allen 92 Gerichten.
+### 💡 Das Praxis-Konzept (Sofort mit Monitor + Kamera umsetzbar)
+Ein normaler Monitor steht geschützt **hinter der Glasscheibe** des Restaurants. Eine **Kamera** (vor dem Monitor oder weiter hinten im Raum platziert) hat den Betrachter im Blick. Auf dem Monitor läuft ein modernes **Fast-Food-Bestellterminal** (wie man es von großen Fast-Food-Ketten kennt) – nur dass jeder Passant von außen **berührungslos durch die Glasscheibe hindurch** darin herumblättern und Gerichte auswählen kann:
+
+- **✋ Air-Cursor mit 0,85s Hover-Klick (Dwell-Trigger):** Halte deine Hand kurz auf eine Kategorie, ein Gericht oder die Blätter-Balken – der goldene Ring füllt sich und löst den Klick aus.
+- **👋 Air-Swipe Wisch-Geste (Links / Rechts):** Ein kurzes Winken vor der Kamera oder das Halten der Hand in die großen seitlichen **`◀ ZURÜCK BLÄTTERN` / `WEITER BLÄTTERN ▶`** Zonen blättert sofort zur nächsten Seite.
+- **👌 Pinch-to-Click (MediaPipe Hands 21-Punkt-Tracking):** Daumen und Zeigefinger zusammenführen löst sofort einen Klick aus.
+- **⚙️ Freie Kamera-Aufstellung (`⚙️ Kamera-Setup`):**
+  - Auswahl zwischen mehreren angeschlossenen Kameras (Webcam / USB-Kamera).
+  - **Spiegelung AN / AUS** umschaltbar (je nachdem, ob die Kamera am Monitor nach vorne schaut oder hinter dir steht).
+  - **⛶ Vollbild-Button** für den Zweitmonitor hinter der Scheibe.
+- **🧾 Schaufenster-Merkzettel:** Passanten können sich ihre Lieblingsgerichte vormerken und sehen unten sofort ihre **Bestellnummern (z. B. Nr. 67, Nr. 22)** für die Bestellung am Tresen.
+
+---
+
+## 📡 Modul 1: Camera-Tracked Motion Parallax V1 – 3D-Hologramm-Gerät
+
+1. **Mehrwinkel-Kamera-Sensor am Gerät (`-45°` bis `+45°`):** Erfasst Passanten vor oder neben dem Hologramm-Gerät und sendet ein 60-FPS-Signal an den Projektor.
+2. **61-Frame Perspektiv-Wechsel ("Foto-Matrix"):** Schaltet verzögerungsfrei zwischen `Frame #01` und `Frame #61` um und verschiebt **5 Tiefenschichten** mit ultra-kräftigen HDR-Farben (`saturate(1.48) contrast(1.22)`).
+3. **2 wählbare Hardware-Gehäuse:** `💎 Holo-Box` (Transparente OLED-Vitrine) und `🌀 LED-Rotor` (2.400 RPM 3D-Propeller).
