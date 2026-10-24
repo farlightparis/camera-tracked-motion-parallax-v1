@@ -1,0 +1,1838 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#03050a" />
+    <title>Lava Grill V6 – Camera-Tracked Motion Parallax V1</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icon-192.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Space+Grotesk:wght@500;700;800&family=Cinzel:wght@700;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.min.js"
+        }
+      }
+    </script>
+
+    <style>
+      :root {
+        --bg-void: #02040a;
+        --holo-cyan: #00f0ff;
+        --holo-lava: #ff4500;
+        --holo-amber: #ffaa00;
+        --holo-emerald: #10b981;
+        --holo-magenta: #ff007f;
+        --font-display: 'Space Grotesk', system-ui, sans-serif;
+        --font-serif: 'Cinzel', Georgia, serif;
+        --font-mono: 'JetBrains Mono', monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background-color: var(--bg-void);
+        color: #ffffff;
+        font-family: var(--font-display);
+      }
+
+      #webgl-canvas {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 2;
+        display: block;
+        touch-action: none;
+      }
+
+      /* Subtle Vignette for Extreme Color Pop */
+      .optical-vignette {
+        position: fixed;
+        inset: 0;
+        z-index: 3;
+        pointer-events: none;
+        background: radial-gradient(circle at 50% 48%, transparent 52%, rgba(1, 3, 10, 0.88) 100%);
+      }
+
+      /* Main UI Overlay */
+      .hud-layer {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: max(env(safe-area-inset-top, 10px), 10px) 12px max(env(safe-area-inset-bottom, 10px), 10px) 12px;
+      }
+
+      .hud-top-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        pointer-events: auto;
+        max-width: 560px;
+        width: 100%;
+        margin: 0 auto;
+      }
+
+      /* Top Header Row */
+      .header-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .brand-pill {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        background: rgba(6, 10, 24, 0.88);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 69, 0, 0.55);
+        padding: 6px 12px;
+        border-radius: 999px;
+        box-shadow: 0 0 20px rgba(255, 69, 0, 0.25);
+      }
+
+      .pulse-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--holo-lava);
+        box-shadow: 0 0 10px var(--holo-lava), 0 0 18px var(--holo-amber);
+        animation: pulseGlow 1.3s infinite alternate;
+      }
+
+      @keyframes pulseGlow {
+        0% { transform: scale(0.88); opacity: 0.75; }
+        100% { transform: scale(1.22); opacity: 1; }
+      }
+
+      .brand-title {
+        font-family: var(--font-serif);
+        font-size: 12.5px;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        color: #fff;
+        display: block;
+      }
+
+      .brand-sub {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        font-weight: 700;
+        color: var(--holo-cyan);
+        letter-spacing: 0.06em;
+        display: block;
+      }
+
+      .device-mode-pills {
+        display: flex;
+        gap: 5px;
+      }
+
+      .hw-btn {
+        background: rgba(6, 10, 24, 0.85);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(0, 240, 255, 0.3);
+        color: #cbd5e1;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .hw-btn.active {
+        background: rgba(0, 240, 255, 0.2);
+        border-color: var(--holo-cyan);
+        color: #fff;
+        box-shadow: 0 0 16px rgba(0, 240, 255, 0.35);
+      }
+
+      /* Live Camera-to-Hologram Signal Pipeline Dashboard */
+      .signal-pipeline-card {
+        background: rgba(5, 9, 22, 0.86);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(0, 240, 255, 0.32);
+        border-radius: 16px;
+        padding: 8px 11px;
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.65);
+      }
+
+      /* Mini Camera Radar / Live Webcam View */
+      .cam-sensor-box {
+        position: relative;
+        width: 78px;
+        height: 56px;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #030714;
+        border: 1.5px solid var(--holo-emerald);
+        flex-shrink: 0;
+      }
+
+      #sensor-video {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scaleX(-1);
+        display: none;
+      }
+
+      #radar-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .cam-badge-tag {
+        position: absolute;
+        bottom: 2px;
+        left: 3px;
+        right: 3px;
+        background: rgba(0, 0, 0, 0.75);
+        color: #34d399;
+        font-family: var(--font-mono);
+        font-size: 7.5px;
+        font-weight: 800;
+        text-align: center;
+        border-radius: 3px;
+        padding: 1px 2px;
+      }
+
+      .pipeline-telemetry {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        min-width: 0;
+      }
+
+      .pipe-row-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 800;
+        color: var(--holo-cyan);
+      }
+
+      .signal-flow-bar {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        font-weight: 800;
+        color: #fff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .signal-pulse-arrow {
+        color: var(--holo-amber);
+        animation: arrowFlash 0.7s infinite alternate;
+      }
+
+      @keyframes arrowFlash {
+        0% { opacity: 0.35; transform: translateX(-2px); }
+        100% { opacity: 1; transform: translateX(2px); }
+      }
+
+      .frame-counter-badge {
+        background: linear-gradient(135deg, rgba(255, 69, 0, 0.25), rgba(255, 170, 0, 0.25));
+        border: 1px solid var(--holo-amber);
+        border-radius: 10px;
+        padding: 5px 8px;
+        text-align: center;
+        flex-shrink: 0;
+      }
+
+      .frame-counter-num {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--holo-amber);
+        display: block;
+        line-height: 1.1;
+      }
+
+      .frame-counter-lbl {
+        font-family: var(--font-mono);
+        font-size: 8px;
+        color: #fde68a;
+        letter-spacing: 0.05em;
+      }
+
+      /* Signal Trigger Toast */
+      .signal-toast {
+        position: fixed;
+        top: 138px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-12px) scale(0.94);
+        z-index: 25;
+        background: linear-gradient(90deg, rgba(16, 185, 129, 0.95), rgba(0, 240, 255, 0.95));
+        border: 1.5px solid #fff;
+        padding: 7px 14px;
+        border-radius: 999px;
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        font-weight: 800;
+        color: #020617;
+        box-shadow: 0 0 28px rgba(0, 240, 255, 0.75);
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.28s ease;
+        max-width: calc(100vw - 28px);
+        text-align: center;
+      }
+
+      .signal-toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1);
+      }
+
+      /* Bottom Control Deck */
+      .hud-bottom-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        pointer-events: auto;
+        max-width: 560px;
+        width: 100%;
+        margin: 0 auto;
+      }
+
+      /* Interactive Angle Scrubber / Passerby Radar Track (-45° to +45°) */
+      .angle-track-card {
+        background: rgba(5, 9, 22, 0.88);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 170, 0, 0.35);
+        border-radius: 14px;
+        padding: 7px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .angle-track-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-family: var(--font-mono);
+        font-size: 9.5px;
+        font-weight: 700;
+        color: #cbd5e1;
+      }
+
+      .angle-slider-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .angle-range {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 6px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #00f0ff 0%, #ffaa00 50%, #ff4500 100%);
+        outline: none;
+        cursor: pointer;
+      }
+
+      .angle-range::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #ffffff;
+        border: 3px solid var(--holo-lava);
+        box-shadow: 0 0 14px var(--holo-lava);
+        cursor: grab;
+      }
+
+      /* 6 Vivid Dish Selector Pills */
+      .dish-strip {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        padding: 2px 1px;
+        scrollbar-width: none;
+      }
+      .dish-strip::-webkit-scrollbar {
+        display: none;
+      }
+
+      .dish-pill {
+        flex: 1 0 auto;
+        background: rgba(6, 10, 24, 0.86);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 11px;
+        padding: 6px 10px;
+        color: #cbd5e1;
+        font-family: var(--font-display);
+        font-size: 11.5px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+      }
+
+      .dish-pill.active {
+        background: rgba(255, 69, 0, 0.22);
+        border-color: var(--holo-amber);
+        color: #fff;
+        box-shadow: 0 0 16px rgba(255, 136, 0, 0.35);
+      }
+
+      /* Action Buttons Deck */
+      .action-bar {
+        display: grid;
+        grid-template-columns: 1.25fr 1fr auto;
+        gap: 7px;
+        background: rgba(5, 9, 22, 0.9);
+        backdrop-filter: blur(18px);
+        border: 1px solid rgba(0, 240, 255, 0.35);
+        border-radius: 16px;
+        padding: 7px;
+      }
+
+      .btn-sensor-mode {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        border-radius: 11px;
+        padding: 10px 10px;
+        color: #fff;
+        font-family: var(--font-display);
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        box-shadow: 0 0 18px rgba(16, 185, 129, 0.4);
+      }
+
+      .btn-sensor-mode.cam-live {
+        background: linear-gradient(135deg, #ff4500 0%, #ff9e00 100%);
+        box-shadow: 0 0 22px rgba(255, 69, 0, 0.55);
+      }
+
+      .btn-sim-toggle {
+        background: rgba(0, 240, 255, 0.14);
+        border: 1.5px solid var(--holo-cyan);
+        border-radius: 11px;
+        padding: 10px 10px;
+        color: #fff;
+        font-family: var(--font-display);
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+      }
+
+      .btn-sim-toggle.active {
+        background: rgba(0, 240, 255, 0.28);
+        box-shadow: 0 0 16px rgba(0, 240, 255, 0.35);
+      }
+
+      .btn-menu-open {
+        background: rgba(255, 170, 0, 0.16);
+        border: 1px solid var(--holo-amber);
+        border-radius: 11px;
+        padding: 0 12px;
+        color: var(--holo-amber);
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        font-weight: 800;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+      }
+
+      /* -------------------------------------------------------------
+       * INTEGRATED 92-DISHES SPEISEKARTE MODAL
+       * ------------------------------------------------------------- */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        background: rgba(2, 5, 14, 0.86);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 14px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease;
+      }
+
+      .modal-backdrop.open {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .menu-dialog {
+        width: 100%;
+        max-width: 560px;
+        height: 85vh;
+        background: linear-gradient(165deg, rgba(8, 15, 34, 0.97) 0%, rgba(4, 8, 20, 0.99) 100%);
+        border: 1.5px solid var(--holo-cyan);
+        border-radius: 22px;
+        box-shadow: 0 0 50px rgba(0, 240, 255, 0.25);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .menu-header {
+        padding: 14px 18px;
+        border-bottom: 1px solid rgba(0, 240, 255, 0.22);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .menu-header-title {
+        font-family: var(--font-serif);
+        font-size: 15px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+      }
+
+      .close-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        color: #fff;
+        font-size: 15px;
+        cursor: pointer;
+      }
+
+      .menu-search-wrap {
+        padding: 10px 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .menu-search {
+        width: 100%;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid rgba(0, 240, 255, 0.35);
+        border-radius: 10px;
+        padding: 9px 13px;
+        color: #fff;
+        font-family: var(--font-display);
+        font-size: 14px;
+        outline: none;
+      }
+
+      .menu-cats {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        padding: 9px 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        scrollbar-width: none;
+        flex-shrink: 0;
+      }
+      .menu-cats::-webkit-scrollbar {
+        display: none;
+      }
+
+      .cat-chip {
+        flex-shrink: 0;
+        padding: 5px 11px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        color: #cbd5e1;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .cat-chip.active {
+        background: rgba(0, 240, 255, 0.2);
+        border-color: var(--holo-cyan);
+        color: #fff;
+      }
+
+      .menu-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 14px 16px 24px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .cat-heading {
+        font-size: 17px;
+        font-weight: 800;
+        color: var(--holo-cyan);
+        border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+        padding-bottom: 5px;
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .dish-row {
+        background: rgba(15, 23, 42, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: 11px;
+        padding: 11px 13px;
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 7px;
+      }
+
+      .dish-nr {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 800;
+        padding: 2px 6px;
+        border-radius: 5px;
+        background: rgba(0, 240, 255, 0.15);
+        color: var(--holo-cyan);
+        margin-right: 6px;
+      }
+
+      .dish-title {
+        font-size: 15.5px;
+        font-weight: 800;
+        color: #fff;
+      }
+
+      .dish-sub {
+        font-size: 12.5px;
+        color: #cbd5e1;
+        margin-top: 3px;
+      }
+
+      .dish-cost {
+        font-family: var(--font-mono);
+        font-size: 14.5px;
+        font-weight: 800;
+        color: var(--holo-amber);
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 3D Volumetric Multi-Angle Parallax Hologram Stage -->
+    <canvas id="webgl-canvas"></canvas>
+    <div class="optical-vignette"></div>
+
+    <!-- Signal Impulse Toast -->
+    <div class="signal-toast" id="signal-toast">
+      ⚡ KAMERA-SIGNAL EMPFANGEN · WECHSLE ZU NÄCHSTEM HOLOGRAMM-FOTO!
+    </div>
+
+    <!-- HUD Layer -->
+    <div class="hud-layer">
+      <div class="hud-top-stack">
+        <!-- Top Brand & Hardware Selector -->
+        <header class="header-bar">
+          <div class="brand-pill">
+            <span class="pulse-dot"></span>
+            <div>
+              <span class="brand-title">LAVA GRILL · V6</span>
+              <span class="brand-sub">CAMERA-TRACKED MOTION PARALLAX V1</span>
+            </div>
+          </div>
+
+          <div class="device-mode-pills">
+            <button class="hw-btn active" data-hw="box" title="Transparente OLED Holo-Box">
+              💎 Holo-Box
+            </button>
+            <button class="hw-btn" data-hw="rotor" title="3D-LED-Rotor-Lüfter">
+              🌀 LED-Rotor
+            </button>
+          </div>
+        </header>
+
+        <!-- Real-Time Camera-Sensor to Hologram Signal Pipeline Monitor -->
+        <div class="signal-pipeline-card">
+          <div class="cam-sensor-box">
+            <video id="sensor-video" autoplay playsinline muted></video>
+            <canvas id="radar-canvas" width="156" height="112"></canvas>
+            <div class="cam-badge-tag" id="cam-status-tag">RADAR-SIM</div>
+          </div>
+
+          <div class="pipeline-telemetry">
+            <div class="pipe-row-top">
+              <span id="sensor-mode-label">📡 MEHRWINKEL-KAMERA-SENSOR</span>
+              <span id="viewer-angle-readout" style="color: #34d399">WINKEL: +0°</span>
+            </div>
+            <div class="signal-flow-bar">
+              <span>KAMERA</span>
+              <span class="signal-pulse-arrow">━━▶</span>
+              <span id="signal-state-text" style="color: #fde68a">SIGNAL AKTIV (60 FPS)</span>
+              <span class="signal-pulse-arrow">━━▶</span>
+              <span>HOLO</span>
+            </div>
+            <div style="font-family: var(--font-mono); font-size: 9.5px; color: #94a3b8">
+              Perspektiv-Sync: <strong style="color: #fff" id="parallax-depth-label">5-Schichten HDR-Tiefe</strong>
+            </div>
+          </div>
+
+          <div class="frame-counter-badge">
+            <span class="frame-counter-num" id="frame-num-display">#31/61</span>
+            <span class="frame-counter-lbl">FOTO-FRAME</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Interactive Controls -->
+      <div class="hud-bottom-stack">
+        <!-- Angle Scrubber & Passerby Position (-45° to +45° = Frame 01 to 61) -->
+        <div class="angle-track-card">
+          <div class="angle-track-header">
+            <span>🚶 PASSANTEN-POSITION VOR DEM HOLOGRAMM (-45° LINKS ↔ +45° RECHTS)</span>
+            <span id="active-frame-info" style="color: var(--holo-amber)">FRAME 31 · 0° MITTE</span>
+          </div>
+          <div class="angle-slider-wrap">
+            <span style="font-family: var(--font-mono); font-size: 10px; color: var(--holo-cyan)">-45°</span>
+            <input
+              type="range"
+              class="angle-range"
+              id="angle-slider"
+              min="-45"
+              max="45"
+              step="0.5"
+              value="0"
+            />
+            <span style="font-family: var(--font-mono); font-size: 10px; color: var(--holo-lava)">+45°</span>
+          </div>
+        </div>
+
+        <!-- 6 Vivid Hologram Dishes -->
+        <div class="dish-strip" id="dish-strip">
+          <button class="dish-pill active" data-dish="0">🔥 1 · Spezial-Grillteller</button>
+          <button class="dish-pill" data-dish="1">🥙 2 · Drehspieß Kebab</button>
+          <button class="dish-pill" data-dish="2">🍕 3 · Pizza Lava 32cm</button>
+          <button class="dish-pill" data-dish="3">🥟 4 · XXL Calzone</button>
+          <button class="dish-pill" data-dish="4">🌯 5 · Frischer Dürüm</button>
+          <button class="dish-pill" data-dish="5">🥗 6 · Bauernsalat</button>
+        </div>
+
+        <!-- Main Sensor & Menu Buttons -->
+        <div class="action-bar">
+          <button class="btn-sensor-mode" id="btn-live-cam">
+            📹 Live-Kamera-Tracking
+          </button>
+          <button class="btn-sim-toggle active" id="btn-auto-walk">
+            🚶 Passanten-Lauf
+          </button>
+          <button class="btn-menu-open" id="btn-open-menu">
+            📖 92 Gerichte
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Integrated 92-Dishes Speisekarte Modal -->
+    <div class="modal-backdrop" id="menu-modal">
+      <div class="menu-dialog">
+        <div class="menu-header">
+          <span class="menu-header-title">⚡ LAVA GRILL · ALLE 92 GERICHTE</span>
+          <button class="close-btn" id="btn-close-menu">✕</button>
+        </div>
+        <div class="menu-search-wrap">
+          <input
+            type="text"
+            class="menu-search"
+            id="menu-search"
+            placeholder="Speise, Nummer oder Zutat suchen..."
+          />
+        </div>
+        <div class="menu-cats" id="menu-cats"></div>
+        <div class="menu-list" id="menu-list"></div>
+      </div>
+    </div>
+
+    <script type="module">
+      import * as THREE from 'three'
+      import { kategorien } from './menu.js'
+
+      /* -------------------------------------------------------------
+       * 1. SIX ULTRA-VIVID HOLOGRAM DISH SHOWCASES (61 Perspective Frames each)
+       * ------------------------------------------------------------- */
+      const HOLO_DISHES = [
+        {
+          id: 0,
+          nr: 'Nr. 67',
+          title: 'SPEZIAL GRILLTELLER',
+          subtitle: '1 Adana · 1 Lammkotelett · 1 Steak · 1 Hähnchen · Gyros',
+          price: '19,50 €',
+          badgeTop: '🔥 850°C ECHTE LAVAGLUT',
+          badgeBot: 'INKL. POMMES / BULGUR & SALAT',
+          image: 'img/food-grillteller.webp',
+          bgImage: 'img/grill.webp',
+          primaryColor: '#ff4500',
+          glowColor: '#ffaa00',
+          accentHex: 0xff4500,
+        },
+        {
+          id: 1,
+          nr: 'Nr. 55',
+          title: 'DREHSPIESS TELLER',
+          subtitle: 'Kebab- oder Gyrosfleisch frisch vom Drehspieß geschnitten',
+          price: '13,50 €',
+          badgeTop: '🥙 TÄGLICH FRISCH VOM SPIESS',
+          badgeBot: 'MIT 4 HAUSGEMACHTEN SOSSEN',
+          image: 'img/spiess.webp',
+          bgImage: 'img/lava.webp',
+          primaryColor: '#ff9e00',
+          glowColor: '#ff4500',
+          accentHex: 0xff9e00,
+        },
+        {
+          id: 2,
+          nr: 'Nr. 22',
+          title: 'PIZZA LAVA Ø 32 CM',
+          subtitle: 'Kebab, Gyros, Schinken, Salami, Zwiebeln & 100% Gouda',
+          price: '10,00 / 13,00 €',
+          badgeTop: '🍕 400°C STEINOFEN-KRUSTE',
+          badgeBot: 'Ø 26 CM · Ø 32 CM STEINOFEN',
+          image: 'img/food-pizza-kebab.webp',
+          bgImage: 'img/food-pizza.webp',
+          primaryColor: '#00f0ff',
+          glowColor: '#ff9e00',
+          accentHex: 0x00f0ff,
+        },
+        {
+          id: 3,
+          nr: 'Nr. 28',
+          title: 'CALZONE LAVA XXL',
+          subtitle: 'Gefüllte Teigtasche mit Drehspießfleisch, Käse & Hollandaise',
+          price: '11,50 €',
+          badgeTop: '🥟 GOLDGELB GEBACKEN',
+          badgeBot: 'HEISS & FÄDEN ZIEHEND',
+          image: 'img/food-calzone.webp',
+          bgImage: 'img/food-pizza.webp',
+          primaryColor: '#10b981',
+          glowColor: '#00f0ff',
+          accentHex: 0x10b981,
+        },
+        {
+          id: 4,
+          nr: 'Nr. 63',
+          title: 'DÜRÜM & LAHMACUN',
+          subtitle: 'Frisch gerolltes Fladenbrot mit saftigem Kebab, Salat & Soße',
+          price: '8,50 €',
+          badgeTop: '🌯 HANDGEROLLT & KNUSPRIG',
+          badgeBot: 'AUCH MIT WEICHKÄSE VOR ORT',
+          image: 'img/food-duerum.webp',
+          bgImage: 'img/food-lahmacun.webp',
+          primaryColor: '#ff007f',
+          glowColor: '#ffaa00',
+          accentHex: 0xff007f,
+        },
+        {
+          id: 5,
+          nr: 'Nr. 9',
+          title: 'FRISCHER BAUERNSALAT',
+          subtitle: 'Knackiger Eisberg, Tomaten, Gurken, Mais, Weichkäse & Brot',
+          price: '10,00 €',
+          badgeTop: '🥗 TÄGLICH FRISCHE SALATBAR',
+          badgeBot: 'INKL. OFENFRISCHEM BROT',
+          image: 'img/food-salat.webp',
+          bgImage: 'img/salatbar.webp',
+          primaryColor: '#10b981',
+          glowColor: '#34d399',
+          accentHex: 0x10b981,
+        },
+      ]
+
+      let currentDishIdx = 0
+      let hardwareMode = 'box' // 'box' (Holo-Box Vitrine) | 'rotor' (3D-LED-Rotor)
+
+      // Viewer angle tracked by Camera / Simulator (-45 deg to +45 deg)
+      let targetAngleDeg = 0
+      let currentAngleDeg = 0
+      let targetPitchDeg = 0
+      let currentPitchDeg = 0
+
+      let isAutoWalkActive = true
+      let isLiveCameraActive = false
+      let autoWalkTime = 0
+
+      /* -------------------------------------------------------------
+       * 2. PRELOAD REAL FOOD PHOTOS & RENDER ULTRA-VIVID HDR TEXTURES
+       * ------------------------------------------------------------- */
+      const loadedImgs = {}
+      HOLO_DISHES.forEach((d) => {
+        ;[d.image, d.bgImage].forEach((src) => {
+          if (!src || loadedImgs[src]) return
+          const img = new Image()
+          img.crossOrigin = 'anonymous'
+          img.onload = () => {
+            loadedImgs[src] = img
+            renderVividDishLayers(currentDishIdx, currentAngleDeg)
+          }
+          img.src = src
+        })
+      })
+
+      // 3 Multi-Plane Depth Canvases for the Active Hologram:
+      // Layer 1: Deep Background Aura Canvas (800x1000)
+      // Layer 2: Central Vivid HDR Food Subject Canvas (1024x1024)
+      // Layer 3: Foreground Pop-Out Callout Overlay Canvas (1024x1280)
+      const bgCanvas = document.createElement('canvas')
+      bgCanvas.width = 800
+      bgCanvas.height = 1000
+      const bgTex = new THREE.CanvasTexture(bgCanvas)
+
+      const foodCanvas = document.createElement('canvas')
+      foodCanvas.width = 1024
+      foodCanvas.height = 1024
+      const foodTex = new THREE.CanvasTexture(foodCanvas)
+      foodTex.anisotropy = 8
+
+      const fgCanvas = document.createElement('canvas')
+      fgCanvas.width = 1024
+      fgCanvas.height = 1280
+      const fgTex = new THREE.CanvasTexture(fgCanvas)
+      fgTex.anisotropy = 8
+
+      function drawRoundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath()
+        ctx.moveTo(x + r, y)
+        ctx.lineTo(x + w - r, y)
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r)
+        ctx.lineTo(x + w, y + h - r)
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
+        ctx.lineTo(x + r, y + h)
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r)
+        ctx.lineTo(x, y + r)
+        ctx.quadraticCurveTo(x, y, x + r, y)
+        ctx.closePath()
+      }
+
+      // Compute discrete Frame Number (01 to 61) from Angle (-45° to +45°)
+      function getFrameNumber(angleDeg) {
+        const clamped = Math.max(-45, Math.min(45, angleDeg))
+        return Math.round(((clamped + 45) / 90) * 60) + 1
+      }
+
+      function renderVividDishLayers(dishIdx, angleDeg) {
+        const dish = HOLO_DISHES[dishIdx]
+        const normAngle = angleDeg / 45 // -1 to +1
+
+        /* --- A. DEEP BACKGROUND AURA LAYER --- */
+        {
+          const ctx = bgCanvas.getContext('2d')
+          ctx.clearRect(0, 0, bgCanvas.width, bgCanvas.height)
+
+          const rad = ctx.createRadialGradient(400, 480, 40, 400, 480, 390)
+          rad.addColorStop(0, dish.primaryColor)
+          rad.addColorStop(0.45, 'rgba(15, 23, 42, 0.85)')
+          rad.addColorStop(1, 'rgba(0, 0, 0, 0)')
+          ctx.fillStyle = rad
+          ctx.fillRect(0, 0, 800, 1000)
+
+          const bgImg = loadedImgs[dish.bgImage]
+          if (bgImg) {
+            ctx.save()
+            ctx.globalAlpha = 0.25
+            ctx.filter = 'saturate(1.6) contrast(1.2) blur(4px)'
+            ctx.drawImage(bgImg, 40, 80, 720, 840)
+            ctx.restore()
+          }
+
+          // Concentric depth target rings
+          ctx.strokeStyle = dish.glowColor
+          ctx.globalAlpha = 0.35
+          ctx.lineWidth = 3
+          ctx.beginPath()
+          ctx.arc(400, 480, 320, 0, Math.PI * 2)
+          ctx.stroke()
+          ctx.globalAlpha = 1
+          bgTex.needsUpdate = true
+        }
+
+        /* --- B. ULTRA-VIVID HDR FOOD SUBJECT LAYER (With Dynamic Angle Specular Glaze) --- */
+        {
+          const ctx = foodCanvas.getContext('2d')
+          const cx = 512
+          const cy = 512
+          const r = 435
+          ctx.clearRect(0, 0, 1024, 1024)
+
+          // Outer Intense Neon Corona (Makes colors pop against dark void!)
+          ctx.save()
+          ctx.beginPath()
+          ctx.arc(cx, cy, r + 16, 0, Math.PI * 2)
+          ctx.strokeStyle = dish.primaryColor
+          ctx.lineWidth = 14
+          ctx.shadowColor = dish.primaryColor
+          ctx.shadowBlur = 42
+          ctx.stroke()
+          ctx.restore()
+
+          // Circular 3D Platter Rim (shifts perspective slightly with angle)
+          ctx.save()
+          ctx.beginPath()
+          ctx.arc(cx, cy, r, 0, Math.PI * 2)
+          ctx.closePath()
+          ctx.clip()
+
+          // Deep glowing backplate
+          const plateGrad = ctx.createRadialGradient(cx, cy, 40, cx, cy, r)
+          plateGrad.addColorStop(0, '#27171c')
+          plateGrad.addColorStop(1, '#050814')
+          ctx.fillStyle = plateGrad
+          ctx.fillRect(0, 0, 1024, 1024)
+
+          const mainImg = loadedImgs[dish.image]
+          if (mainImg) {
+            ctx.save()
+            // Extreme Vivid HDR Color Boost ("kräftig an Farben"!)
+            ctx.filter = 'saturate(1.48) contrast(1.22) brightness(1.08)'
+            const aspect = mainImg.width / mainImg.height
+            let dw = r * 2.18
+            let dh = r * 2.18
+            if (aspect > 1) dw = dh * aspect
+            else dh = dw / aspect
+            // Subtle perspective shift of the photo inside the rim based on viewer angle
+            const shiftX = normAngle * 28
+            ctx.drawImage(mainImg, cx - dw / 2 + shiftX, cy - dh / 2, dw, dh)
+            ctx.restore()
+          } else {
+            ctx.fillStyle = dish.primaryColor
+            ctx.font = '900 180px sans-serif'
+            ctx.textAlign = 'center'
+            ctx.fillText('🔥', cx, cy + 60)
+          }
+
+          // Dynamic Moving Specular Light Reflection (Moves across the food as viewer walks past!)
+          const specX = cx - normAngle * 290
+          const specY = cy - 110
+          const specGrad = ctx.createRadialGradient(specX, specY, 10, specX, specY, 340)
+          specGrad.addColorStop(0, 'rgba(255, 255, 255, 0.34)')
+          specGrad.addColorStop(0.4, 'rgba(255, 200, 100, 0.12)')
+          specGrad.addColorStop(1, 'rgba(255, 255, 255, 0)')
+          ctx.fillStyle = specGrad
+          ctx.fillRect(0, 0, 1024, 1024)
+
+          // Deep 3D Rim Shadow for spherical relief illusion
+          const rimShadow = ctx.createRadialGradient(cx, cy, r * 0.68, cx, cy, r)
+          rimShadow.addColorStop(0, 'rgba(0,0,0,0)')
+          rimShadow.addColorStop(0.85, 'rgba(0,0,0,0.45)')
+          rimShadow.addColorStop(1, 'rgba(0, 240, 255, 0.55)')
+          ctx.fillStyle = rimShadow
+          ctx.fillRect(0, 0, 1024, 1024)
+
+          ctx.restore()
+
+          // Double Glowing Laser Ring around the dish
+          ctx.beginPath()
+          ctx.arc(cx, cy, r, 0, Math.PI * 2)
+          ctx.strokeStyle = '#ffffff'
+          ctx.lineWidth = 6
+          ctx.stroke()
+
+          ctx.beginPath()
+          ctx.arc(cx, cy, r + 28, 0, Math.PI * 2)
+          ctx.strokeStyle = '#00f0ff'
+          ctx.lineWidth = 4
+          ctx.setLineDash([28, 14])
+          ctx.stroke()
+          ctx.setLineDash([])
+
+          foodTex.needsUpdate = true
+        }
+
+        /* --- C. FOREGROUND POP-OUT 3D CALLOUT LAYER (Breaks the frame in front!) --- */
+        {
+          const ctx = fgCanvas.getContext('2d')
+          ctx.clearRect(0, 0, 1024, 1280)
+
+          // Top Floating 3D Badge
+          drawRoundRect(ctx, 140, 38, 744, 72, 36)
+          ctx.fillStyle = 'rgba(4, 9, 24, 0.92)'
+          ctx.fill()
+          ctx.strokeStyle = dish.primaryColor
+          ctx.lineWidth = 4
+          ctx.shadowColor = dish.primaryColor
+          ctx.shadowBlur = 18
+          ctx.stroke()
+          ctx.shadowBlur = 0
+
+          ctx.fillStyle = '#ffffff'
+          ctx.font = '900 32px "JetBrains Mono", monospace'
+          ctx.textAlign = 'center'
+          ctx.fillText(`${dish.badgeTop} · ${dish.nr}`, 512, 85)
+
+          // Bottom Pop-Out Dish Title & Vivid Price Banner
+          const cardY = 935
+          drawRoundRect(ctx, 56, cardY, 912, 290, 34)
+          const cGrad = ctx.createLinearGradient(56, cardY, 968, cardY + 290)
+          cGrad.addColorStop(0, 'rgba(6, 12, 30, 0.95)')
+          cGrad.addColorStop(1, 'rgba(12, 20, 44, 0.95)')
+          ctx.fillStyle = cGrad
+          ctx.fill()
+
+          ctx.strokeStyle = '#00f0ff'
+          ctx.lineWidth = 4
+          ctx.shadowColor = '#00f0ff'
+          ctx.shadowBlur = 22
+          ctx.stroke()
+          ctx.shadowBlur = 0
+
+          // Dish Name
+          ctx.fillStyle = '#ffffff'
+          ctx.font = '900 58px "Space Grotesk", sans-serif'
+          ctx.textAlign = 'center'
+          ctx.fillText(dish.title, 512, cardY + 78)
+
+          // Subtitle
+          ctx.fillStyle = '#cbd5e1'
+          ctx.font = '700 26px "Space Grotesk", sans-serif'
+          ctx.fillText(dish.subtitle, 512, cardY + 124)
+
+          // Price Callout Pill
+          drawRoundRect(ctx, 82, cardY + 148, 860, 76, 20)
+          const pGrad = ctx.createLinearGradient(82, cardY + 148, 942, cardY + 224)
+          pGrad.addColorStop(0, dish.primaryColor)
+          pGrad.addColorStop(1, '#d97706')
+          ctx.fillStyle = pGrad
+          ctx.fill()
+          ctx.strokeStyle = '#ffffff'
+          ctx.lineWidth = 3
+          ctx.stroke()
+
+          ctx.fillStyle = '#ffffff'
+          ctx.font = '900 32px "JetBrains Mono", monospace'
+          ctx.fillText(`${dish.price} · ${dish.badgeBot}`, 512, cardY + 198)
+
+          // Live Frame Stamp
+          const frameNr = String(getFrameNumber(angleDeg)).padStart(2, '0')
+          ctx.fillStyle = '#34d399'
+          ctx.font = '800 22px "JetBrains Mono", monospace'
+          ctx.fillText(
+            `⚡ AKTIVES PERSPEKTIV-FOTO: FRAME #${frameNr}/61 (WINKEL ${angleDeg >= 0 ? '+' : ''}${Math.round(angleDeg)}°)`,
+            512,
+            cardY + 266
+          )
+
+          fgTex.needsUpdate = true
+        }
+      }
+
+      /* -------------------------------------------------------------
+       * 3. THREE.JS 3D HOLOGRAM DEVICE & ANAMORPHIC PARALLAX STAGE
+       * ------------------------------------------------------------- */
+      const canvasEl = document.getElementById('webgl-canvas')
+      const renderer = new THREE.WebGLRenderer({
+        canvas: canvasEl,
+        antialias: true,
+        alpha: true,
+        powerPreference: 'high-performance',
+        preserveDrawingBuffer: true,
+      })
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+      renderer.setSize(window.innerWidth, window.innerHeight)
+
+      const scene = new THREE.Scene()
+      const camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.05, 25)
+      camera.position.set(0, 0, 1.18)
+
+      scene.add(new THREE.AmbientLight(0xffffff, 2.0))
+
+      /* Root Group of the Physical Hologram Device */
+      const deviceRoot = new THREE.Group()
+      scene.add(deviceRoot)
+
+      // HARDWARE 1: Transparent OLED Holo-Box Vitrine Housing
+      const holoBoxGroup = new THREE.Group()
+      deviceRoot.add(holoBoxGroup)
+
+      const boxW = 0.48
+      const boxH = 0.62
+      const boxD = 0.24
+      const boxEdges = new THREE.EdgesGeometry(new THREE.BoxGeometry(boxW, boxH, boxD))
+      const boxLineMat = new THREE.LineBasicMaterial({
+        color: 0x00f0ff,
+        transparent: true,
+        opacity: 0.55,
+      })
+      const boxWireframe = new THREE.LineSegments(boxEdges, boxLineMat)
+      holoBoxGroup.add(boxWireframe)
+
+      // Dark base & top cap of the Holo-Box
+      const capGeo = new THREE.BoxGeometry(boxW + 0.02, 0.025, boxD + 0.02)
+      const capMat = new THREE.MeshBasicMaterial({ color: 0x080f24 })
+      const bottomCap = new THREE.Mesh(capGeo, capMat)
+      bottomCap.position.y = -boxH / 2 - 0.012
+      holoBoxGroup.add(bottomCap)
+
+      const topCap = new THREE.Mesh(capGeo, capMat)
+      topCap.position.y = boxH / 2 + 0.012
+      holoBoxGroup.add(topCap)
+
+      // Camera Sensor Module mounted on top of the Holo-Box!
+      const sensorMount = new THREE.Mesh(
+        new THREE.BoxGeometry(0.12, 0.028, 0.04),
+        new THREE.MeshBasicMaterial({ color: 0x10b981 })
+      )
+      sensorMount.position.set(0, boxH / 2 + 0.032, boxD / 2)
+      holoBoxGroup.add(sensorMount)
+
+      // HARDWARE 2: 3D-LED-Rotor Fan Blades (Hypervsn style)
+      const ledRotorGroup = new THREE.Group()
+      ledRotorGroup.visible = false
+      deviceRoot.add(ledRotorGroup)
+
+      const rotorRing = new THREE.Mesh(
+        new THREE.RingGeometry(0.25, 0.26, 64),
+        new THREE.MeshBasicMaterial({ color: 0xff4500, side: THREE.DoubleSide, transparent: true, opacity: 0.4 })
+      )
+      rotorRing.position.z = -0.05
+      ledRotorGroup.add(rotorRing)
+
+      const rotorBladesGroup = new THREE.Group()
+      rotorBladesGroup.position.z = -0.04
+      ledRotorGroup.add(rotorBladesGroup)
+
+      for (let b = 0; b < 2; b++) {
+        const blade = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.5, 0.014),
+          new THREE.MeshBasicMaterial({
+            color: 0x00f0ff,
+            transparent: true,
+            opacity: 0.22,
+            blending: THREE.AdditiveBlending,
+          })
+        )
+        blade.rotation.z = (b * Math.PI) / 2
+        rotorBladesGroup.add(blade)
+      }
+
+      /* -------------------------------------------------------------
+       * 4. FIVE-LAYER ANAMORPHIC 3D PARALLAX STACK
+       * ------------------------------------------------------------- */
+      // Layer 1 (Deep Back at z = -0.11): Shifts OPPOSITE to viewer
+      const bgPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.46, 0.58),
+        new THREE.MeshBasicMaterial({
+          map: bgTex,
+          transparent: true,
+          opacity: 0.9,
+          depthWrite: false,
+        })
+      )
+      bgPlane.position.z = -0.11
+      deviceRoot.add(bgPlane)
+
+      // Layer 2 (3D Rotating Laser Turntable Ring at z = -0.03)
+      const turntableGroup = new THREE.Group()
+      turntableGroup.position.set(0, 0.03, -0.02)
+      deviceRoot.add(turntableGroup)
+
+      const tRing1 = new THREE.Mesh(
+        new THREE.TorusGeometry(0.21, 0.0035, 12, 64),
+        new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.75 })
+      )
+      turntableGroup.add(tRing1)
+
+      const tRing2 = new THREE.Mesh(
+        new THREE.TorusGeometry(0.235, 0.0025, 8, 16),
+        new THREE.MeshBasicMaterial({ color: 0x00f0ff, wireframe: true, transparent: true, opacity: 0.55 })
+      )
+      turntableGroup.add(tRing2)
+
+      // Layer 3 (Central Vivid HDR Food Relief at z = +0.025)
+      // Uses a slightly curved 3D geometry so turning it creates genuine 3D surface volume!
+      const foodGeo = new THREE.PlaneGeometry(0.39, 0.39, 24, 24)
+      const posArr = foodGeo.attributes.position
+      for (let i = 0; i < posArr.count; i++) {
+        const vx = posArr.getX(i)
+        const vy = posArr.getY(i)
+        const distSq = vx * vx + vy * vy
+        // Convex 3D dome relief in center
+        const bulge = Math.max(0, 0.038 * (1 - distSq / 0.04))
+        posArr.setZ(i, bulge)
+      }
+      foodGeo.computeVertexNormals()
+
+      const foodMesh = new THREE.Mesh(
+        foodGeo,
+        new THREE.MeshBasicMaterial({
+          map: foodTex,
+          transparent: true,
+          side: THREE.DoubleSide,
+        })
+      )
+      foodMesh.position.set(0, 0.04, 0.02)
+      deviceRoot.add(foodMesh)
+
+      // Layer 4 (Out-of-Box Foreground Callouts at z = +0.095 -> Pops out in front of the glass!)
+      const fgPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.45, 0.56),
+        new THREE.MeshBasicMaterial({
+          map: fgTex,
+          transparent: true,
+          depthWrite: false,
+        })
+      )
+      fgPlane.position.z = 0.095
+      deviceRoot.add(fgPlane)
+
+      // Layer 5 (Volumetric Rising Fire Sparks in front of and around the dish)
+      const SPARK_COUNT = 180
+      const sparkGeo = new THREE.BufferGeometry()
+      const sPos = new Float32Array(SPARK_COUNT * 3)
+      const sCol = new Float32Array(SPARK_COUNT * 3)
+      const sSpd = new Float32Array(SPARK_COUNT)
+
+      for (let i = 0; i < SPARK_COUNT; i++) {
+        sPos[i * 3 + 0] = (Math.random() - 0.5) * 0.52
+        sPos[i * 3 + 1] = (Math.random() - 0.5) * 0.64
+        sPos[i * 3 + 2] = (Math.random() - 0.3) * 0.24
+        sSpd[i] = 0.1 + Math.random() * 0.25
+
+        const isCyan = i % 4 === 0
+        sCol[i * 3 + 0] = isCyan ? 0.0 : 1.0
+        sCol[i * 3 + 1] = isCyan ? 0.94 : 0.45 + Math.random() * 0.4
+        sCol[i * 3 + 2] = isCyan ? 1.0 : 0.0
+      }
+      sparkGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3))
+      sparkGeo.setAttribute('color', new THREE.BufferAttribute(sCol, 3))
+
+      function makeSparkSprite() {
+        const c = document.createElement('canvas')
+        c.width = 64
+        c.height = 64
+        const x = c.getContext('2d')
+        const g = x.createRadialGradient(32, 32, 2, 32, 32, 30)
+        g.addColorStop(0, 'rgba(255,255,255,1)')
+        g.addColorStop(0.4, 'rgba(255,180,60,0.85)')
+        g.addColorStop(1, 'rgba(0,0,0,0)')
+        x.fillStyle = g
+        x.fillRect(0, 0, 64, 64)
+        return new THREE.CanvasTexture(c)
+      }
+
+      const sparkPoints = new THREE.Points(
+        sparkGeo,
+        new THREE.PointsMaterial({
+          size: 0.02,
+          map: makeSparkSprite(),
+          vertexColors: true,
+          transparent: true,
+          opacity: 0.9,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        })
+      )
+      deviceRoot.add(sparkPoints)
+
+      renderVividDishLayers(0, 0)
+
+      /* -------------------------------------------------------------
+       * 5. MULTI-ANGLE CAMERA RADAR & REAL WEBCAM MOTION TRACKER
+       * ------------------------------------------------------------- */
+      const radarCanvas = document.getElementById('radar-canvas')
+      const radarCtx = radarCanvas.getContext('2d')
+      const sensorVideo = document.getElementById('sensor-video')
+
+      // Offscreen motion-detection buffer (64x48) for real webcam tracking
+      const trackW = 64
+      const trackH = 48
+      const trackCvs = document.createElement('canvas')
+      trackCvs.width = trackW
+      trackCvs.height = trackH
+      const trackCtx = trackCvs.getContext('2d', { willReadFrequently: true })
+      let prevFrameData = null
+      let motionCooldown = 0
+
+      function processLiveCameraFrame() {
+        if (!isLiveCameraActive || sensorVideo.readyState < 2) return
+
+        // Mirror horizontally so moving left in front of camera = left on screen
+        trackCtx.save()
+        trackCtx.scale(-1, 1)
+        trackCtx.drawImage(sensorVideo, -trackW, 0, trackW, trackH)
+        trackCtx.restore()
+
+        const frame = trackCtx.getImageData(0, 0, trackW, trackH).data
+        let sumX = 0
+        let sumY = 0
+        let weightTotal = 0
+        let motionPixels = 0
+
+        for (let y = 0; y < trackH; y++) {
+          for (let x = 0; x < trackW; x++) {
+            const idx = (y * trackW + x) * 4
+            const r = frame[idx]
+            const g = frame[idx + 1]
+            const b = frame[idx + 2]
+
+            // 1. Frame-to-frame motion difference
+            let diff = 0
+            if (prevFrameData) {
+              diff =
+                (Math.abs(r - prevFrameData[idx]) +
+                  Math.abs(g - prevFrameData[idx + 1]) +
+                  Math.abs(b - prevFrameData[idx + 2])) /
+                3
+            }
+
+            // 2. Warm skin/face tone heuristic + motion weight
+            const isFaceTone = r > 85 && g > 45 && b > 30 && r > g * 1.08 && r > b * 1.18
+            const w = (diff > 18 ? diff * 2.5 : 0) + (isFaceTone ? 28 : 0)
+
+            if (diff > 28) motionPixels++
+
+            if (w > 0) {
+              sumX += x * w
+              sumY += y * w
+              weightTotal += w
+            }
+          }
+        }
+
+        prevFrameData = new Uint8ClampedArray(frame)
+
+        if (weightTotal > 400) {
+          const cx = sumX / weightTotal / trackW // 0..1
+          const cy = sumY / weightTotal / trackH // 0..1
+          // Map 0..1 to -45°..+45°
+          targetAngleDeg = Math.max(-45, Math.min(45, (cx - 0.5) * 110))
+          targetPitchDeg = Math.max(-20, Math.min(20, (cy - 0.5) * 50))
+        }
+
+        // If person waves strongly -> send Signal to switch dish!
+        if (motionCooldown > 0) motionCooldown--
+        if (motionPixels > trackW * trackH * 0.28 && motionCooldown === 0) {
+          motionCooldown = 75
+          triggerSignalDishSwitch()
+        }
+      }
+
+      function drawRadarHUD(angleDeg) {
+        const w = radarCanvas.width
+        const h = radarCanvas.height
+        radarCtx.clearRect(0, 0, w, h)
+
+        if (!isLiveCameraActive) {
+          radarCtx.fillStyle = '#030816'
+          radarCtx.fillRect(0, 0, w, h)
+        } else {
+          radarCtx.fillStyle = 'rgba(3, 8, 22, 0.45)'
+          radarCtx.fillRect(0, 0, w, h)
+        }
+
+        const ox = w / 2
+        const oy = 14
+
+        // Draw 3 Camera Sensor Cones (-45°, 0°, +45°)
+        radarCtx.strokeStyle = 'rgba(0, 240, 255, 0.35)'
+        radarCtx.lineWidth = 1.5
+        ;[-0.65, 0, 0.65].forEach((ang) => {
+          radarCtx.beginPath()
+          radarCtx.moveTo(ox, oy)
+          radarCtx.lineTo(ox + Math.sin(ang) * 90, oy + Math.cos(ang) * 90)
+          radarCtx.stroke()
+        })
+
+        // Radar arcs
+        ;[34, 62, 88].forEach((rad) => {
+          radarCtx.beginPath()
+          radarCtx.arc(ox, oy, rad, 0.2, Math.PI - 0.2)
+          radarCtx.strokeStyle = 'rgba(16, 185, 129, 0.3)'
+          radarCtx.stroke()
+        })
+
+        // Detected Passerby Target Lock Dot
+        const radAng = (angleDeg / 45) * 0.68
+        const px = ox + Math.sin(radAng) * 62
+        const py = oy + Math.cos(radAng) * 62
+
+        // Signal beam from person to Hologram Projector at (ox, oy)
+        radarCtx.beginPath()
+        radarCtx.moveTo(px, py)
+        radarCtx.lineTo(ox, oy)
+        radarCtx.strokeStyle = '#ffaa00'
+        radarCtx.lineWidth = 2.5
+        radarCtx.stroke()
+
+        // Target reticle around person
+        radarCtx.fillStyle = '#10b981'
+        radarCtx.beginPath()
+        radarCtx.arc(px, py, 7, 0, Math.PI * 2)
+        radarCtx.fill()
+
+        radarCtx.strokeStyle = '#ffffff'
+        radarCtx.lineWidth = 2
+        radarCtx.strokeRect(px - 11, py - 11, 22, 22)
+      }
+
+      /* -------------------------------------------------------------
+       * 6. UI CONTROLS, DISH SWITCHING & HARDWARE SWITCHING
+       * ------------------------------------------------------------- */
+      const angleSlider = document.getElementById('angle-slider')
+      const angleReadout = document.getElementById('viewer-angle-readout')
+      const frameNumDisplay = document.getElementById('frame-num-display')
+      const activeFrameInfo = document.getElementById('active-frame-info')
+      const signalToast = document.getElementById('signal-toast')
+
+      function selectDish(idx, showSignalToast = false) {
+        currentDishIdx = (idx + HOLO_DISHES.length) % HOLO_DISHES.length
+        const dish = HOLO_DISHES[currentDishIdx]
+
+        document.querySelectorAll('.dish-pill').forEach((btn, i) => {
+          btn.classList.toggle('active', i === currentDishIdx)
+        })
+
+        boxLineMat.color.setHex(dish.accentHex)
+        tRing1.material.color.setHex(dish.accentHex)
+        renderVividDishLayers(currentDishIdx, currentAngleDeg)
+
+        if (showSignalToast) {
+          signalToast.textContent = `⚡ KAMERA-SIGNAL -> WECHSLE ZU FOTO-SET: ${dish.title}!`
+          signalToast.classList.add('show')
+          setTimeout(() => signalToast.classList.remove('show'), 2400)
+        }
+      }
+
+      function triggerSignalDishSwitch() {
+        selectDish(currentDishIdx + 1, true)
+      }
+
+      document.querySelectorAll('.dish-pill').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          selectDish(parseInt(btn.dataset.dish, 10), true)
+        })
+      })
+
+      // Hardware Housing Switch (Holo-Box vs LED-Rotor)
+      document.querySelectorAll('.hw-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.hw-btn').forEach((b) => b.classList.remove('active'))
+          btn.classList.add('active')
+          hardwareMode = btn.dataset.hw
+          holoBoxGroup.visible = hardwareMode === 'box'
+          ledRotorGroup.visible = hardwareMode === 'rotor'
+        })
+      })
+
+      // Manual Angle Slider
+      angleSlider.addEventListener('input', (e) => {
+        isAutoWalkActive = false
+        document.getElementById('btn-auto-walk').classList.remove('active')
+        targetAngleDeg = parseFloat(e.target.value)
+        currentAngleDeg = targetAngleDeg
+        syncParallaxToAngle(currentAngleDeg, currentPitchDeg, performance.now() * 0.001, true)
+        renderer.render(scene, camera)
+      })
+
+      // Drag on 3D Canvas to move Passerby Angle (-45° to +45°)
+      let isDraggingCanvas = false
+      let dragStartX = 0
+      let dragStartAngle = 0
+
+      window.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('.hud-layer, .modal-backdrop')) return
+        isDraggingCanvas = true
+        dragStartX = e.clientX
+        dragStartAngle = targetAngleDeg
+        isAutoWalkActive = false
+        document.getElementById('btn-auto-walk').classList.remove('active')
+      })
+
+      window.addEventListener('pointermove', (e) => {
+        if (!isDraggingCanvas) return
+        const dx = e.clientX - dragStartX
+        const deltaDeg = (dx / window.innerWidth) * 90
+        targetAngleDeg = Math.max(-45, Math.min(45, dragStartAngle + deltaDeg))
+        angleSlider.value = targetAngleDeg
+      })
+
+      window.addEventListener('pointerup', () => {
+        isDraggingCanvas = false
+      })
+
+      // Auto-Walk Passerby Simulator Toggle
+      const autoWalkBtn = document.getElementById('btn-auto-walk')
+      autoWalkBtn.addEventListener('click', () => {
+        isAutoWalkActive = !isAutoWalkActive
+        autoWalkBtn.classList.toggle('active', isAutoWalkActive)
+      })
+
+      // Live Camera Tracking Button
+      const liveCamBtn = document.getElementById('btn-live-cam')
+      const camStatusTag = document.getElementById('cam-status-tag')
+
+      liveCamBtn.addEventListener('click', async () => {
+        if (!isLiveCameraActive) {
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: 'user', width: 320, height: 240 },
+              audio: false,
+            })
+            sensorVideo.srcObject = stream
+            sensorVideo.style.display = 'block'
+            isLiveCameraActive = true
+            isAutoWalkActive = false
+            autoWalkBtn.classList.remove('active')
+            liveCamBtn.classList.add('cam-live')
+            liveCamBtn.textContent = '🟢 Kamera-Tracking Aktiv'
+            camStatusTag.textContent = 'LIVE-VISION'
+          } catch (err) {
+            // Fallback if camera denied or headless
+            liveCamBtn.classList.toggle('cam-live')
+            triggerSignalDishSwitch()
+          }
+        } else {
+          if (sensorVideo.srcObject) {
+            sensorVideo.srcObject.getTracks().forEach((t) => t.stop())
+          }
+          sensorVideo.style.display = 'none'
+          isLiveCameraActive = false
+          liveCamBtn.classList.remove('cam-live')
+          liveCamBtn.textContent = '📹 Live-Kamera-Tracking'
+          camStatusTag.textContent = 'RADAR-SIM'
+        }
+      })
+
+      /* -------------------------------------------------------------
+       * 7. INTEGRATED 92-DISHES SPEISEKARTE
+       * ------------------------------------------------------------- */
+      const menuModal = document.getElementById('menu-modal')
+      const menuCats = document.getElementById('menu-cats')
+      const menuList = document.getElementById('menu-list')
+      const menuSearch = document.getElementById('menu-search')
+      let activeCat = 'all'
+
+      function fmtEuro(n) {
+        return Number(n).toFixed(2).replace('.', ',') + ' €'
+      }
+
+      function initMenu() {
+        const allBtn = document.createElement('button')
+        allBtn.className = 'cat-chip active'
+        allBtn.textContent = 'Alle (92)'
+        allBtn.onclick = () => {
+          activeCat = 'all'
+          menuCats.querySelectorAll('.cat-chip').forEach((c) => c.classList.remove('active'))
+          allBtn.classList.add('active')
+          renderMenu(menuSearch.value)
+        }
+        menuCats.appendChild(allBtn)
+
+        kategorien.forEach((k) => {
+          const b = document.createElement('button')
+          b.className = 'cat-chip'
+          b.textContent = `${k.titel} (${k.gerichte.length})`
+          b.onclick = () => {
+            activeCat = k.id
+            menuCats.querySelectorAll('.cat-chip').forEach((c) => c.classList.remove('active'))
+            b.classList.add('active')
+            renderMenu(menuSearch.value)
+          }
+          menuCats.appendChild(b)
+        })
+        renderMenu('')
+      }
+
+      function renderMenu(q = '') {
+        const query = q.trim().toLowerCase()
+        menuList.innerHTML = ''
+        kategorien.forEach((k) => {
+          if (activeCat !== 'all' && k.id !== activeCat) return
+          const items = k.gerichte.filter(({ nr, name, text }) => {
+            if (!query) return true
+            return (
+              String(nr).includes(query) ||
+              name.toLowerCase().includes(query) ||
+              (text && text.toLowerCase().includes(query))
+            )
+          })
+          if (!items.length) return
+
+          const sec = document.createElement('div')
+          sec.innerHTML = `<div class="cat-heading"><span>${k.titel}</span><span style="font-size:12px;color:#94a3b8">${items.length}</span></div>`
+          items.forEach(({ nr, name, preise, text }) => {
+            const row = document.createElement('div')
+            row.className = 'dish-row'
+            const pStr = Array.isArray(preise) ? preise.map(fmtEuro).join(' / ') : fmtEuro(preise)
+            row.innerHTML = `
+              <div>
+                <div><span class="dish-nr">Nr. ${nr}</span><span class="dish-title">${name}</span></div>
+                ${text ? `<div class="dish-sub">${text}</div>` : ''}
+              </div>
+              <div class="dish-cost">${pStr}</div>
+            `
+            sec.appendChild(row)
+          })
+          menuList.appendChild(sec)
+        })
+      }
+
+      initMenu()
+      menuSearch.addEventListener('input', (e) => renderMenu(e.target.value))
+      document.getElementById('btn-open-menu').onclick = () => menuModal.classList.add('open')
+      document.getElementById('btn-close-menu').onclick = () => menuModal.classList.remove('open')
+
+      /* -------------------------------------------------------------
+       * 8. REAL-TIME MOTION PARALLAX ANIMATION LOOP (60 FPS)
+       * ------------------------------------------------------------- */
+      function updateCameraFraming() {
+        const aspect = window.innerWidth / window.innerHeight
+        camera.position.z = aspect < 0.75 ? 1.28 : 0.96
+      }
+      updateCameraFraming()
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
+        renderer.setSize(window.innerWidth, window.innerHeight)
+        updateCameraFraming()
+      })
+
+      let lastRenderedFrameNr = 31
+      const clock = new THREE.Clock()
+
+      function syncParallaxToAngle(angleDeg, pitchDeg, t, forceRender = false) {
+        const normX = angleDeg / 45 // -1 .. +1
+        const normY = pitchDeg / 25 // -1 .. +1
+        const frameNr = getFrameNumber(angleDeg)
+
+        if (forceRender || frameNr !== lastRenderedFrameNr) {
+          lastRenderedFrameNr = frameNr
+          const sign = angleDeg >= 0 ? '+' : ''
+          const degRound = Math.round(angleDeg)
+          const fPad = String(frameNr).padStart(2, '0')
+
+          angleReadout.textContent = `WINKEL: ${sign}${degRound}°`
+          frameNumDisplay.textContent = `#${fPad}/61`
+          activeFrameInfo.textContent = `FRAME ${fPad} · ${sign}${degRound}° BLICKWINKEL`
+
+          renderVividDishLayers(currentDishIdx, angleDeg)
+        }
+
+        // Background shifts OPPOSITE to viewer's head movement (creates deep window illusion)
+        bgPlane.position.x = -normX * 0.085
+        bgPlane.position.y = -normY * 0.035
+
+        // Central 3D Relief Food rotates & tilts toward the viewer's eyes
+        foodMesh.rotation.y = normX * 0.42
+        foodMesh.rotation.x = -normY * 0.22
+        foodMesh.position.x = normX * 0.018
+        foodMesh.position.y = 0.04 + Math.sin(t * 2.0) * 0.008
+
+        // Turntable rings tilt in 3D perspective
+        turntableGroup.rotation.y = normX * 0.48
+        turntableGroup.rotation.x = 0.35 - normY * 0.2
+        tRing2.rotation.z = t * 0.45
+
+        // Foreground Callout Plane shifts WITH viewer (Positive Out-of-Screen Parallax!)
+        fgPlane.position.x = normX * 0.016
+        fgPlane.position.y = normY * 0.015
+
+        // Physical Holo-Box / Rotor subtle perspective shift
+        deviceRoot.rotation.y = normX * 0.11
+        deviceRoot.rotation.x = -normY * 0.06
+
+        drawRadarHUD(angleDeg)
+      }
+
+      function animate() {
+        requestAnimationFrame(animate)
+        const dt = Math.min(clock.getDelta(), 0.1)
+        const t = clock.getElapsedTime()
+
+        // 1. Update Viewer Angle from Live Camera or Passerby Walk Simulator
+        if (isLiveCameraActive) {
+          processLiveCameraFrame()
+        } else if (isAutoWalkActive) {
+          autoWalkTime += dt
+          targetAngleDeg = Math.sin(autoWalkTime * 0.85) * 40
+          targetPitchDeg = Math.cos(autoWalkTime * 0.5) * 6
+          angleSlider.value = targetAngleDeg
+        }
+
+        currentAngleDeg += (targetAngleDeg - currentAngleDeg) * 0.16
+        currentPitchDeg += (targetPitchDeg - currentPitchDeg) * 0.16
+
+        syncParallaxToAngle(currentAngleDeg, currentPitchDeg, t, false)
+
+        if (ledRotorGroup.visible) {
+          rotorBladesGroup.rotation.z = t * 28.0
+        }
+
+        // Rising Fire Sparks
+        const posAttr = sparkGeo.getAttribute('position')
+        for (let i = 0; i < SPARK_COUNT; i++) {
+          let py = posAttr.getY(i)
+          py += sSpd[i] * dt
+          if (py > 0.32) py = -0.32
+          posAttr.setY(i, py)
+        }
+        posAttr.needsUpdate = true
+
+        renderer.render(scene, camera)
+      }
+
+      animate()
+    </script>
+  </body>
+</html>

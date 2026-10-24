@@ -1,0 +1,28 @@
+{
+  "titel": "Lava Grill V6 – Camera-Tracked Motion Parallax V1",
+  "kurz": "Das intelligente Hologramm-Gerät mit Live-Kamera-Tracking: Erfasst die Position & Bewegung von Passanten aus mehreren Winkeln, sendet Echtzeit-Signale an den Projektor und schaltet verzögerungsfrei durch 61 farbkräftige 3D-Perspektiv-Fotos.",
+  "sinn": "Der funktionierende Prototyp für ein reales Schaufenster-Hologramm-Gerät ohne Datenbrille: Mehrwinkel-Kamerasensoren erfassen in Echtzeit, wo ein Passant vor oder neben dem Gerät steht (-45° bis +45°) und senden das Positionssignal direkt an das Hologramm-Display. Durch das blitzschnelle Umschalten zwischen 61 mehrschichtigen, extrem farbkräftigen Perspektiv-Frames (Motion Parallax) entsteht im menschlichen Gehirn die verblüffende optische Täuschung, dass das echte Gericht plastisch und greifbar mitten im Raum vor einem schwebt.",
+  "wichtig": [
+    "Echtzeit-Kamera-Tracking (WebRTC Vision): Erkennt Kopf-/Körperposition & Handbewegungen vor der Kamera",
+    "Signal-Pipeline in Echtzeit: Kamera-Sensor → Winkel-Signal (-45° bis +45°) → Sofortiger Foto-Frame-Wechsel (Frame 01 bis 61)",
+    "3 reale Hardware-Bauweisen wählbar: 3D-LED-Rotor-Lüfter (Hypervsn-Stil), Transparente OLED Holo-Box & Freischwebend",
+    "HDR-Farbkraft & 5-Schichten-Tiefenparallaxe: Echte Speisefotos mit dynamischem Glanzlicht & Out-of-Screen-Effekt",
+    "Passanten-Simulator inklusive: Demonstriert live, wie Vorbeigehende am Schaufenster erfasst werden",
+    "Bewegungs-Trigger: Winken oder Stehenbleiben vor der Kamera schaltet automatisch zum nächsten Gericht",
+    "Integrierte 92-Gerichte-Speisekarte & eigenes eigenständiges GitHub-Repository"
+  ],
+  "autor": "Andreas",
+  "tags": [
+    "v6",
+    "motion-parallax",
+    "camera-tracking",
+    "hologramm-geraet",
+    "led-rotor",
+    "holo-box",
+    "threejs",
+    "computer-vision",
+    "lava-grill"
+  ],
+  "typ": "lokal",
+  "stand": "live"
+}
